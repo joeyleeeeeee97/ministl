@@ -282,7 +282,7 @@ namespace ministl
 			for (iterator it = start; it != End; it++)
 				destroy(it);
 			data_allocator.deallocate(start, end_of_storage - start);
-			End = end_of_storage = start = 0;
+			End = start;
 		}
 		void swap(vector<T, Alloc> &rhs)
 		{
