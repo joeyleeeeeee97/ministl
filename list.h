@@ -80,7 +80,7 @@ namespace ministl
 			return tmp;
 		}
 	};
-	//ç¯çŠ¶é“¾è¡¨ nodeè¡¨ç¤ºé“¾è¡¨å°¾éƒ¨çš„ä¸€ä¸ªç©ºç™½ç»“ç‚¹, å…¶nextæŒ‡å‘listå¤´ç»“ç‚¹
+	//»·×´Á´±í node±íÊ¾Á´±íÎ²²¿µÄÒ»¸ö¿Õ°×½áµã, ÆänextÖ¸ÏòlistÍ·½áµã
 	template<class T>
 	class list
 	{
@@ -96,7 +96,7 @@ namespace ministl
 	protected:
 		typedef list_node<T> list_node;
 		typedef list_iterator<T> iterator;
-		iterator node;//æœ€åä¸€ä¸ªè¿­ä»£å™¨
+		iterator node;//×îºóÒ»¸öµü´úÆ÷
 		node_ptr get_node()
 		{
 			return data_allocator.allocate(1);
@@ -176,7 +176,10 @@ namespace ministl
 		{
 			pos.ptr->pre->next = pos.ptr->next;
 			pos.ptr->next->pre = pos.ptr->pre;
-			return iterator(pos.ptr->next);
+			node_ptr tmp = pos.ptr->next;
+			destroy(&pos.ptr->data);
+			data_allocator.deallocate(pos.ptr,sizeof(list_node));
+			return iterator(tmp);
 		}
 		//The list container is extended by inserting new elements before the element at position.
 		iterator insert(iterator pos, const T& x)
@@ -194,6 +197,7 @@ namespace ministl
 			while (sz--)
 				insert(pos, x);
 		}
+		//this will loop forever when first-last is in list's range
 		/*template<class InputIterator>
 		void insert(iterator pos, InputIterator first, InputIterator last)
 		{
@@ -210,6 +214,72 @@ namespace ministl
 		{
 			clear();
 			insert(begin(), n, x);
+		}
+
+		void merge(list<T> &other)
+		{
+			auto p1 = begin(), p2 = other.begin();
+			while (p1 != end() && p2 != other.end())
+			{
+				if (*p1 < *p2)
+					p1++;
+				else if (*p1 >= *p2)
+				{
+					insert(p1, *p2);
+					p2++;
+					/*for (auto it = begin(); it != end(); it++)
+						cout << *it << endl;
+					cout << endl;*/
+				}
+			}
+			while (p2 != other.end())
+				insert(end(), *(p2++));
+		}
+
+		void remove(const T& x)
+		{
+			for (auto it = begin(); it != end(); )
+			{
+				if (*it == x)
+					it = erase(it);
+				else
+					it++;
+				
+			}
+		}
+
+		//bool single_digit (const int& value) { return (value<10); }
+		/*template<typename fun>
+		void remove_if(fun f)
+		{
+			for (auto it = begin(); it != end();)
+			{
+				if (fun(*it))
+					it = erase(it);
+				else
+					it++;
+			}
+		}*/
+
+		void reverse()
+		{
+			auto it = begin();
+			for (; it != end();it--)
+			{
+				std::swap(it.ptr->next, it.ptr->pre);
+			}
+			std::swap(it.ptr->next, it.ptr->pre);
+		}
+
+		void unique()
+		{
+			for (auto it = begin(); it != end(); )
+			{
+				if ((it.ptr->data) == (it.ptr->next->data))
+					erase(it.ptr->next);
+				else
+					it++;
+			}
 		}
 	};
 }
