@@ -281,6 +281,24 @@ namespace ministl
 					it++;
 			}
 		}
+		void transfer(iterator pos, iterator first, iterator last)
+		{
+			last.ptr->pre->next = pos.ptr;
+			pos.ptr->pre->next = first.ptr;
+			pos.ptr->pre = last.ptr->pre;
+			last.ptr->pre = first.ptr->pre;
+			first.ptr->pre->next = last.ptr;
+			first.ptr->pre = pos.ptr->pre;
+
+		}
+		void splice(iterator pos, list&, iterator i)
+		{
+			iterator j = i;
+			++j;
+			if (pos == i || pos == j)
+				return;
+			transger(pos, i, j);
+		}
 	};
 }
 
