@@ -2,6 +2,7 @@
 
 #ifndef _DEQUE_H
 #define _DEQUE_H
+#include<memory>
 namespace ministl
 {
 	inline size_t _deque_buf_size(size_t n, size_t sz)
@@ -28,6 +29,12 @@ namespace ministl
 
 		typedef _deque_iterator self;
 
+
+		_deque_iterator()
+		{
+			cur = first = last = NULL;
+			node = NULL;
+		}
 		T* cur;//此迭代器所指缓冲区中的元素
 		T* first;//缓冲区开头元素
 		T* last;//缓冲区尾部元素
@@ -133,7 +140,7 @@ namespace ministl
 	/*
 	deque 除了维护一个先前说过的指向map的指针外，也维护start finish 两个迭代器，分别指向第一缓冲区的第一个元素和最后缓冲区的最后一个元素，同时管理当前map的大小，在节点不足时重新分配内存
 	*/
-	template<class T,class Alloc = allocator<T>,size_t Buf_size = 0>
+	template<class T,size_t Buf_size = 0>
 	class deque
 	{
 	public:
@@ -192,9 +199,71 @@ namespace ministl
 
 			}
 		}
+		void reallocate_map(size_type nodes_to_add, bool add_at_front)
+		{
+			size_type old_num_nodes = finish.node - start.node + 1;
+			size_type new_num_nodes = old_num_nodes + nodes_to_add;
+
+			map_pointer new_start;
+			if (map_size > 2 * new_num_nodes)
+			{
+				new_start = map + (map_size - new_num_nodes) / 2 + (add_at_front ? nodes_to_add : 0);
+				if (new_start < start.node)
+					copy(start.node, finish.node + 1, new_start);
+				else
+					copy_backward(start.node, finish.node + 1, new_start + old_num_nodes);
+			}
+			else
+			{
+				size_type new_map_size = map_size + max(map_size, nodes_to_add) + 2;
+				map_pointer new_map = map_allocator.allocate(new_map_size);
+				new_start = new_map + (new_map_size - new_num_nodes) / 2 + (add_at_front ? nodes_to_add : 0);
+				copy(start.node, finish.node + 1, new_start);
+				map = new_map;
+				map_size = new_map_size;
+			}
+		}
+		void push_front_aux(const value_type& val)
+		{
+			if (start.node - map < 1)
+				reallocate_map(1, true);
+			*(start.node - 1) = data_allocator.allocate(buffer_size());
+			try
+			{
+				start.set_node(start.node - 1);
+				start.cur = start.last - 1;
+				data_allocator.construct(start.cur, val);
+			}
+			catch (...)
+			{
+				start.set_node(start.node + 1);
+				start.cur = start.first;
+				data_allocator.deallocate(*(start.node - 1),buffer_size());
+				throw;
+			}
+		}
+		void push_back_aux(const value_type& val)
+		{
+			if (map_size - (finish.node - map) < 2)
+				reallocate_map(1, false);
+			*(finish.node + 1) = data_allocator.allocate(buffer_size());
+			try
+			{
+				data_allocator.construct(finish.cur, val);
+				finish.set_node(finish.node + 1);
+				finish.cur = finish.first;
+			}
+			catch (...)
+			{
+				data_allocator.deallocate(*(finish.node + 1),buffer_size());
+			}
+		}
 	public:
 		//Construct
-		deque() :start(), finish(), map(0), map_size(0) {}
+		deque() :start(), finish(), map(), map_size(0) 
+		{
+			fill_initialize(0, value_type());
+		}
 		deque(int n, const value_type& val)
 		{
 			deque();
@@ -228,7 +297,161 @@ namespace ministl
 		}
 		size_type max_size() { return size_type(-1); }
 		bool empty() { return finish == start; }
+		//Modifiers
+		void push_back(const value_type& val)
+		{
+			if (finish.cur != finish.last - 1)
+			{
+				data_allocator.construct(finish.cur, val);
+				++finish.cur;
+			}
+			else
+				push_back_aux(val);
+		}
+		void push_front(const value_type& val)
+		{
+			if (start.cur != start.first)
+			{
+				data_allocator.construct(start.cur - 1, val);
+				--start.cur;
+			}
+			else
+				push_front_aux(val);
+		}
+		void clear()
+		{
+			for (auto it = start.cur + 1; it < finish.cur; it++)
+				data_allocator.destroy(it);
+			for (auto it = start.node + 1; it <= finish.node; it++)
+				map_allocator.destroy(it),map_allocator.deallocate(it,1);
+			finish = start;
+		}
+		void pop_back()
+		{
+			if (finish.cur != finish.first)
+			{
+				--finish.cur;
+				data_allocator.destroy(finish.cur);
+			}
+			else
+			{
+				data_allocator.deallocate(finish.first,buffer_size());
+				finish.set_node(finish.node - 1);
+				finish.cur = finish.last - 1;
+				data_allocator.destroy(finish.cur);
+			}
+		}
+		void pop_front()
+		{
+			if (start.cur != start.last - 1)
+			{
+				data_allocator.destroy(start.cur);
+				start.cur++;
+			}
+			else
+			{
+				destroy(start.cur);
+				set_node(start.node + 1);
+				start.cur = start.first;
+			}
+		}
 
+		iterator erase(iterator pos)
+		{
+			iterator next = pos++;
+			difference_type index = pos - start;
+			if (index < size() / 2)
+			{
+				copy_backward(start, pos, next);
+				pop_front();
+			}
+			else
+			{
+				copy(next, finish, pos);
+				pop_back();
+			}
+			return start + index;
+		}
+
+		iterator erase(iterator first, iterator last)
+		{
+			if (first == start&&last == finish)
+			{
+				clear();
+				return finish;
+			}
+			else
+			{
+				difference_type n = last - first;
+				difference_type elems_before = first - start;
+				if (elems_before < (size() - n) / 2)//如果前方的元素较少
+				{
+					copy_backward(start, first, last);
+					iterator new_start = start + n;
+					for (auto it = start; it < new_start; it++)
+						data_allocator.destroy(it);
+					for (auto it = start; it < new_start; it++)
+						data_allocator.deallocate(it, buffer_size());
+					start = new_start;
+				}
+				else
+				{
+					copy(last, finish, first);
+					iterator new_finish = finish - n;
+					for (auto it = new_finish; it < finish; it++)
+						data_allocator.destroy(it);
+					for (auto it = new_finish; it < finish; it++)
+						data_allocator.deallocate(it, buffer_size());
+					finish = new_finish;
+				}
+				return start + elems_before;
+				
+			}
+		}
+
+		iterator insert(iterator pos, const value_type& x)
+		{
+			if (pos.cur == start.cur)
+			{
+				push_front(x);
+				return start;
+			}
+			else if (pos.cur == finish.cur)
+			{
+				push_back(x);
+				return finish - 1;
+			}
+			else
+			{
+				difference_type index = pos - start;
+				value_type x_copy = x;
+				if (index < size() / 2)
+				{
+					push_front(front());
+					iterator front1 = start;
+					++front1;
+					iterator front2 = front1;
+					++front2;
+					pos = start + index;
+					iterator pos1 = pos;
+					++pos1;
+					copy(front2, pos1, front1);
+
+				}
+				else
+				{
+					push_back(back());
+					iterator back1 = finish;
+					--back1;
+					iterator back2 = back1;
+					--back2;
+					pos = start + index;
+					copy_backward(pos, back2, back1);
+				}
+				*pos = x_copy;
+				return pos;
+			}
+		}
 	};
 }
 
