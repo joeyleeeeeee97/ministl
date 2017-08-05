@@ -42,6 +42,18 @@ namespace ministl
 				End = finish = start + cnt;
 			}
 		}
+		string(size_type n, char c)
+		{
+			start = data_allocator.allocate(n);
+			std::uninitialized_fill_n(start, n, c);
+			End = finish = start + n;
+		}
+		string(const char* s, size_t n)
+		{
+			start = data_allocator.allocate(n);
+			std::uninitialized_copy_n(s, n, start);
+			finish = End = start + n;
+		}
 		//Iterator
 		iterator begin()
 		{
@@ -68,6 +80,33 @@ namespace ministl
 		{
 			return End - start;
 		}
+		void resize(size_type n)
+		{
+			resize(n, value_type());
+		}
+		void resize(size_type n, const value_type &val)
+		{
+			if (n <= size())
+			{
+				finish = start + n;
+			}
+			else
+			{
+				append(string(n - size(), val));
+			}
+		}
+		void reserve(size_type res_arg = 0)
+		{
+			if (res_arg < capacity())
+			{
+				iterator new_start = data_allocator.allocate(size() + res_arg);
+				std::uninitialized_copy(start, finish, new_start);
+				finish = new_start + size();
+				End = finish + res_arg;
+				data_allocator.deallocate(start, size());			
+				start = new_start;
+			}
+		}
 		//Modifiers
 		value_type& operator[](size_type index)
 		{
@@ -87,6 +126,12 @@ namespace ministl
 				reallocate();
 			*finish = val;
 			finish++;
+		}
+		void swap(string& rhs)
+		{
+			std::swap(start, rhs.start);
+			std::swap(End, rhs.End);
+			std::swap(finish, rhs.finish);
 		}
 		void append(const string& rhs)
 		{
@@ -108,7 +153,81 @@ namespace ministl
 			tmp += rhs;
 			return tmp;
 		}
-	
+		string& assign(const string& str)
+		{
+			clear();
+			append(str);
+			return (*this);
+		}
+		string& assign(const char* s)
+		{
+			return assign(string(s));
+		}
+		string& assign(size_type n, char c)
+		{
+			return assign(string(n, c));
+		}
+		string& insert(size_type pos, const string& rhs)
+		{
+			pos = std::min(size(), pos);
+			size_type new_size = size() + rhs.size();
+			iterator new_start = data_allocator.allocate(new_size);
+			std::uninitialized_copy(start, start + pos, new_start);
+			std::uninitialized_copy(rhs.start, rhs.finish, new_start + pos);
+			std::uninitialized_copy(start + pos, finish, new_start + pos + rhs.size());
+			start = new_start;
+			End = finish = new_size + new_start;
+			return *this;
+		}
+		string& insert(size_type pos, const char* s, size_type n)
+		{
+			return insert(pos, string(s, n));
+		}
+		string& insert(size_type pos, const char* s)
+		{
+			return insert(pos, string(s));
+		}
+		iterator insert(iterator pos, const value_type& val)
+		{
+			size_type index = pos - start;
+			if (size() == capacity())
+				reallocate();
+			pos = start + index;
+			if (pos > end()) pos = end();
+			std::copy(pos, finish, pos + 1);
+			(*pos) = val;
+			finish++;
+			return pos;
+		}
+		string& erase(size_type pos, size_type n)
+		{
+			std::copy(pos + n + start, finish, start + pos);
+			finish = finish - n;
+			return *this;
+		}
+		iterator erase(iterator pos)
+		{
+			std::copy(pos + 1, finish, pos);
+			finish--;
+			return pos;
+		}
+		iterator erase(iterator first, iterator last)
+		{
+			std::copy(last, finish, first);
+			finish = finish - (last - first);
+			return first;
+		}
+		string& replace(size_t pos, size_t n, const string& str)
+		{
+			erase(pos, n);
+			insert(pos, str);
+			return *this;
+		}
+		string& replace(iterator i1, iterator i2, const string& str)
+		{
+			insert(erase(i1, i2) - start,str);
+			return *this;
+		}
 	};
 }
 
