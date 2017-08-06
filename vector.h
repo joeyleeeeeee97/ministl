@@ -6,7 +6,7 @@
 #include<algorithm>
 namespace ministl
 {
-	template<class T, class Alloc = alloc>
+	template<class T, class Alloc = std::allocator<T> >
 	class vector
 	{
 	public:
@@ -21,7 +21,7 @@ namespace ministl
 		Data_allocator data_allocator;
 	protected:
 		iterator start, End, end_of_storage;
-		//¼ì²éÊÇ·ñ¹»¿Õ¼ä
+		//æ£€æŸ¥æ˜¯å¦å¤Ÿç©ºé—´
 		void check()
 		{
 			if (max_size() == size())
@@ -38,10 +38,10 @@ namespace ministl
 			iterator pos = data_allocator.allocate(new_size),tmp;
 			if (pos == nullptr)
 			{
-				cerr << "out of memory" << endl;
-				exit(1);
+				std::cerr << "out of memory" << std::endl;
+				std::exit(1);
 			}
-			tmp = uninitialized_copy(start, End, pos);
+			tmp = std::uninitialized_copy(start, End, pos);
 			for (iterator it = start; it != End; it++)
 				destroy(it);
 			data_allocator.deallocate(start, end_of_storage - start);
@@ -57,17 +57,21 @@ namespace ministl
 		}
 	public:
 		//construct
-		vector() :start(NULL), End(NULL), end_of_storage(NULL) {}
+		vector()
+		{
+			start = data_allocator.allocate(1);
+			End = end_of_storage = start;
+		}
 		vector(int n, value_type val = value_type())
 		{
 			if (n <= 0)
 			{
-				cerr << "²»ÄÜÊÇ¸ºÊıÅ¶£¡" << endl;
-				exit(1);
+				std::cerr << "ä¸èƒ½æ˜¯è´Ÿæ•°å“¦ï¼" << std::endl;
+				std::exit(1);
 			}
 			start = data_allocator.allocate(n);
 			End = end_of_storage = start + n;
-			uninitialized_fill_n(start, n, val);
+			std::uninitialized_fill_n(start, n, val);
 		}
 		vector(iterator first, iterator last)
 		{
@@ -83,7 +87,7 @@ namespace ministl
 		{
 			for (iterator it = start; it != End; it++)
 				destroy(it);
-			data_allocator.deallocate(start, end_of_storage - start);
+			//data_allocator.deallocate(start, end_of_storage - start);
 		}
 		//Iterator
 		iterator begin()
@@ -95,30 +99,30 @@ namespace ministl
 			return End;
 		}
 		//Elemnt access
-		value_type operator [](size_type n)
+		value_type& operator [](size_type n)
 		{
 			if (n >= size())
 			{
-				cerr << "Ô½½ç£¡" << endl;
-				exit(1);
+				std::cerr << "è¶Šç•Œï¼" << std::endl;
+				std::exit(1);
 			}
 			return *(start + n);
 		}
-		value_type front()
+		value_type& front()
 		{
 			if (empty())
 			{
-				cerr << "¿ÕµÄ£¡" << endl;
-				exit(1);
+				std::cerr << "ç©ºçš„ï¼" << std::endl;
+				std::exit(1);
 			}
 			return *(start);
 		}
-		value_type back()
+		value_type& back()
 		{
 			if (empty())
 			{
-				cerr << "¿ÕµÄ£¡" << endl;
-				exit(1);
+				std::cerr << "ç©ºçš„ï¼" << std::endl;
+				std::exit(1);
 			}
 			return *(End - 1);
 		}
@@ -141,14 +145,15 @@ namespace ministl
 			size_type sz = size();
 			if (n <= sz)
 			{
-				End = end_of_storage = uninitialized_copy_n(start, n, pos);
+				End = end_of_storage = std::uninitialized_copy_n(start, n, pos);
 				start = pos;
 			}
 			else
 			{
-				End = uninitialized_copy(start, End, pos);
-				end_of_storage = uninitialized_fill_n(End, n - sz, val);
+				End = std::uninitialized_copy(start, End, pos);
+				end_of_storage = std::uninitialized_fill_n(End, n - sz, val);
 				start = pos;
+				End = pos + n;
 			}
 		}
 		void reserve(size_type n)
@@ -156,7 +161,9 @@ namespace ministl
 			if (n > size())
 			{
 				iterator pos = data_allocator.allocate(n);
-				End = uninitialized_copy(start, End, pos);
+				for (auto it = start; it != End; it++)
+					destroy(it);
+				End = std::uninitialized_copy(start, End, pos);
 				start = pos;
 				end_of_storage = start + n;
 			}
@@ -175,14 +182,14 @@ namespace ministl
 		{
 			if (empty())
 			{
-				cerr << "¿ÕµÄ!" << endl;
-				exit(1);
+				std::cerr << "ç©ºçš„!" << std::endl;
+				std::exit(1);
 			}
 			End--;
 			destroy(End);
 		}
 		template<class InputIterator>
-		void assign(InputIterator first, InputIterator last)//ÏÈÖ»Éè¼ÆÖ¸ÕëµÄ
+		void assign(InputIterator first, InputIterator last)//å…ˆåªè®¾è®¡æŒ‡é’ˆçš„
 		{
 			for (iterator it = start; it != End; it++)
 				destroy(it);
@@ -201,79 +208,84 @@ namespace ministl
 		}
 		iterator insert(iterator pos, const value_type &v)
 		{
-			if (pos - start < 0 || pos >= End)
+			if (empty())
 			{
-				cerr << "Ô½½ç£¡" << endl;
-				exit(1);
+				push_back(v);
+				return begin();
 			}
-			size_type pp = pos - start;
-			check();
-			pos = start + pp;
-			uninitialized_copy(pos, End, pos + 1);
-			construct(pos, v);
-			End++;
+			iterator new_end = End + 1;
+			construct(End, *(End - 2));
+			std::copy_backward(pos, End, new_end);
+			*pos = v;
+			End = new_end;
+			end_of_storage++;
 			return pos;
 		}
 		iterator insert(iterator pos, const size_type &n, const value_type &val)
 		{
-			if (pos - start < 0 || pos >= End)
-			{
-				cerr << "Ô½½ç£¡" << endl;
-				exit(1);
-			}
-			size_type pp = pos - start;
+			size_type index = pos - start;
 			check(n);
-			pos = start + pp;
-			uninitialized_copy(pos, End, pos + n);
-			uninitialized_fill_n(pos, n, val);
-			End = End + n;
-			return pos + n - 1;
+			pos = start + index;
+			iterator new_end = End + n;
+			size_type after_num = End - pos;
+			if (after_num > n)
+			{
+				std::uninitialized_copy(End - n, End, End);
+				End += n;
+				std::copy_backward(pos, End - n, End);
+				std::fill(pos, pos + n, val);
+				return pos;
+			}
+			else
+			{
+				/*std::uninitialized_fill_n(End, n - after_num, val);
+				std::uninitialized_copy(pos, End, End + n - after_num);
+				std::fill(pos, End, val);
+				End += n;*/
+				iterator old_end = End;
+				std::uninitialized_fill_n(End, n - after_num, val);
+				End += n - after_num;
+				std::uninitialized_copy(pos, old_end, End);
+				End += after_num;
+				std::fill(pos, old_end, val);
+			}
 		}
 		template<class InputIterator>
-		void insert(iterator pos, InputIterator first, InputIterator last)//»¹ÊÇÏÈÖ»Ğ´ Ç°Ïòµü´úÆ÷
+		void insert(iterator pos, InputIterator first, InputIterator last)//è¿˜æ˜¯å…ˆåªå†™ å‰å‘è¿­ä»£å™¨
 		{
-			if (pos - start < 0 || pos >= End)
+			size_type add_num = last - first, index = pos - start,after_num = End - pos;
+			check(add_num);
+			pos = start + index;
+			if (pos > End) pos = End;
+			if (pos <= End - add_num)
 			{
-				cerr << "Ô½½ç£¡" << endl;
-				exit(1);
+				std::uninitialized_copy(End - add_num, End, End);
+				std::copy_backward(pos, End - add_num, End);
+				std::copy(first, last, pos);
+				End += add_num;
 			}
-			size_type pp = pos - start;
-			check(last-first);
-			pos = start + pp;
-			uninitialized_copy(pos, End, pos + (last - first));
-			uninitialized_copy(first, last, pos);
-			End = End + (last - first);
+			else
+			{
+				iterator new_end = End + add_num;
+				std::uninitialized_copy(pos, End, new_end - after_num);
+				std::copy_n(first, after_num, pos);
+				std::uninitialized_copy_n(first + after_num, add_num - after_num, End);
+				End += add_num;
+			}
 		}
 		iterator erase(iterator pos)
 		{
-			if (pos - start < 0 || pos >= End)
-			{
-				cerr << "Ô½½ç£¡" << endl;
-				exit(1);
-			}
-			destroy(pos);
-			uninitialized_copy(pos + 1, End, pos);
+			std::copy(pos + 1, End, pos);
+			destroy(End - 1);
 			End--;
 			return pos;
 		}
-		
+
 		iterator erase(iterator first, iterator last)
 		{
-			if (first >= last)
-			{
-				cerr << "×ó¶ËµãĞ¡ÓÚÓÒ¶Ëµã£¡" << endl;
-				exit(1);
-			}
-			if (first - start < 0 || last > End)
-			{
-				cerr << "Ô½½ç£¡" << endl;
-				exit(1);
-			}
-			for (iterator it = first; it != last; it++)
-			{
+			std::copy(last, End, first);
+			for (auto it = End - (last - first); it != End; it++)
 				destroy(it);
-			}
-			uninitialized_copy(last, End, first);
 			End = End - (last - first);
 			return last;
 		}
@@ -290,6 +302,28 @@ namespace ministl
 			tmp = start, start = rhs.start, rhs.start = tmp;
 			tmp = End, End = rhs.End, rhs.End = tmp;
 			tmp = end_of_storage, end_of_storage = rhs.end_of_storage, rhs.end_of_storage = tmp;
+		}
+		bool operator==( vector<T,Alloc>& rhs)
+		{
+			if (size() != rhs.size())
+				return false;
+			else
+			{
+				auto it = begin();
+				auto j = rhs.begin();
+				for (; it != end(); )
+				{
+					if (*it != *j)
+						return false;
+					else
+						it++, j++;
+				}
+				return true;
+			}
+		}
+		bool operator!=( vector<T,Alloc>& rhs)
+		{
+			return !(*this == rhs);
 		}
 	};
 		
