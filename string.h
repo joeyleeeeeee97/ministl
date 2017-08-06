@@ -76,6 +76,10 @@ namespace ministl
 		{
 			return finish - start;
 		}
+		const size_type length() const
+		{
+			return size();
+		}
 		const size_type capacity() const
 		{
 			return End - start;
@@ -153,6 +157,18 @@ namespace ministl
 			tmp += rhs;
 			return tmp;
 		}
+		string& operator=(const string& str)
+		{
+			return assign(str);
+		}
+		string& operator=(const char* s)
+		{
+			return assign(string(s));
+		}
+		string& operator=(char c)
+		{
+			return assign(string((size_type)1, c));
+		}
 		string& assign(const string& str)
 		{
 			clear();
@@ -227,6 +243,94 @@ namespace ministl
 		{
 			insert(erase(i1, i2) - start,str);
 			return *this;
+		}
+		const char* c_str() const
+		{
+			return start;
+		}
+		bool operator == (const string& rhs)
+		{
+			if (size() != rhs.size())
+				return false;
+			else
+			{
+				for (auto i = start, j = rhs.start; i != finish; i++, j++)
+				{
+					if ((*i) != (*j))
+						return false;
+				}
+				return true;
+			}
+		}
+		int compare(const string& rhs)
+		{
+			if (size() > rhs.size())
+				return 1;
+			else if (size() < rhs.size())
+				return -1;
+			else
+			{
+				iterator i = start, j = rhs.start;
+				while (i != finish)
+				{
+					if ((*i) > (*j))
+						return 1;
+					else if ((*i) < (*j))
+						return -1;
+					else
+						i++, j++;
+				}
+				return 0;
+			}
+			return 0;
+		}
+		size_type copy(char* s, size_type n, size_type pos = 0) const
+		{
+			if (pos + n >= size())
+			{
+				std::cerr << "out of range" << std::endl;
+				std::exit(1);
+			}
+			std::uninitialized_copy_n(start + pos, n, s);
+			return n;
+		}
+		size_t find(const string& str, size_t pos = 0) const
+		{
+			if (size() - pos < str.size())
+				return (size_type)(-1);
+			for (auto it = start + pos; it != finish; it++)
+			{
+				auto i = it, j = str.start;
+				while (*i == *j)
+					i++, j++;
+				if (j == str.finish )
+					return it - start;
+			}
+			return (size_type)(-1);
+		}
+		size_t find(const char* s, size_t pos, size_t n) const
+		{
+			return find(string(s, n), pos);
+		}
+		size_t find(const char* s, size_t pos = 0) const
+		{
+			return find(string(s), pos);
+		}
+		size_t find(char c, size_t pos = 0) const
+		{
+			if (empty())
+				return size_type(-1);
+			else
+			{
+				for (auto it = start; it != finish; it++)
+					if (*it == c)
+						return it - start;
+				return size_type(-1);
+			}
+		}
+		string substr(size_t n = 0, size_t pos = 0)
+		{
+			return string(start + pos, n);
 		}
 	};
 }
