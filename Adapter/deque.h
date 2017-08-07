@@ -35,10 +35,10 @@ namespace ministl
 			cur = first = last = NULL;
 			node = NULL;
 		}
-		T* cur;//´Ëµü´úÆ÷ËùÖ¸»º³åÇøÖÐµÄÔªËØ
-		T* first;//»º³åÇø¿ªÍ·ÔªËØ
-		T* last;//»º³åÇøÎ²²¿ÔªËØ
-		map_pointer node;//»º³åÇø¿ØÖÆÆ÷
+		T* cur;//æ­¤è¿­ä»£å™¨æ‰€æŒ‡ç¼“å†²åŒºä¸­çš„å…ƒç´ 
+		T* first;//ç¼“å†²åŒºå¼€å¤´å…ƒç´ 
+		T* last;//ç¼“å†²åŒºå°¾éƒ¨å…ƒç´ 
+		map_pointer node;//ç¼“å†²åŒºæŽ§åˆ¶å™¨
 
 		void set_node(map_pointer new_node)
 		{
@@ -91,12 +91,12 @@ namespace ministl
 			--*this;
 			return tmp;
 		}
-		//Ëæ»ú´æÈ¡
+		//éšæœºå­˜å–
 		self& operator+=(difference_type n)
 		{
 			difference_type offset = n + (cur - first);
 			if (offset >= 0 && offset < (difference_type)(buffer_size()))
-				cur += n;//ÔÚµ±Ç°µÄ»º³å¿éÄÚ²¿
+				cur += n;//åœ¨å½“å‰çš„ç¼“å†²å—å†…éƒ¨
 			else
 			{
 				difference_type node_offset = offset > 0 ? offset / difference_type(buffer_size())
@@ -133,12 +133,12 @@ namespace ministl
 		}
 		bool operator<(const self& x)
 		{
-			return (node == x.node) ? (cur < x.cur) : (node < x.node);//ÓÅÏÈ±È½Ï»º³åÇø£¡
+			return (node == x.node) ? (cur < x.cur) : (node < x.node);//ä¼˜å…ˆæ¯”è¾ƒç¼“å†²åŒºï¼
 		}
 	};
 
 	/*
-	deque ³ýÁËÎ¬»¤Ò»¸öÏÈÇ°Ëµ¹ýµÄÖ¸ÏòmapµÄÖ¸ÕëÍâ£¬Ò²Î¬»¤start finish Á½¸öµü´úÆ÷£¬·Ö±ðÖ¸ÏòµÚÒ»»º³åÇøµÄµÚÒ»¸öÔªËØºÍ×îºó»º³åÇøµÄ×îºóÒ»¸öÔªËØ£¬Í¬Ê±¹ÜÀíµ±Ç°mapµÄ´óÐ¡£¬ÔÚ½Úµã²»×ãÊ±ÖØÐÂ·ÖÅäÄÚ´æ
+	deque é™¤äº†ç»´æŠ¤ä¸€ä¸ªå…ˆå‰è¯´è¿‡çš„æŒ‡å‘mapçš„æŒ‡é’ˆå¤–ï¼Œä¹Ÿç»´æŠ¤start finish ä¸¤ä¸ªè¿­ä»£å™¨ï¼Œåˆ†åˆ«æŒ‡å‘ç¬¬ä¸€ç¼“å†²åŒºçš„ç¬¬ä¸€ä¸ªå…ƒç´ å’Œæœ€åŽç¼“å†²åŒºçš„æœ€åŽä¸€ä¸ªå…ƒç´ ï¼ŒåŒæ—¶ç®¡ç†å½“å‰mapçš„å¤§å°ï¼Œåœ¨èŠ‚ç‚¹ä¸è¶³æ—¶é‡æ–°åˆ†é…å†…å­˜
 	*/
 	template<class T,size_t Buf_size = 0>
 	class deque
@@ -384,7 +384,7 @@ namespace ministl
 			{
 				difference_type n = last - first;
 				difference_type elems_before = first - start;
-				if (elems_before < (size() - n) / 2)//Èç¹ûÇ°·½µÄÔªËØ½ÏÉÙ
+				if (elems_before < (size() - n) / 2)//å¦‚æžœå‰æ–¹çš„å…ƒç´ è¾ƒå°‘
 				{
 					copy_backward(start, first, last);
 					iterator new_start = start + n;
