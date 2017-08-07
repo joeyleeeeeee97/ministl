@@ -7,5 +7,9 @@
 	string
 	deque   
 	stack   
-	queue   迭代器     仅前向迭代器和随机迭代器    分配器     allocator   
+	queue
+	
+	迭代器     仅前向迭代器和随机迭代器   
+	
+	分配器     allocator   
 	
