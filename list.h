@@ -80,7 +80,7 @@ namespace ministl
 			return tmp;
 		}
 	};
-	//»·×´Á´±í node±íÊ¾Á´±íÎ²²¿µÄÒ»¸ö¿Õ°×½áµã, ÆänextÖ¸ÏòlistÍ·½áµã
+	//ç¯çŠ¶é“¾è¡¨ nodeè¡¨ç¤ºé“¾è¡¨å°¾éƒ¨çš„ä¸€ä¸ªç©ºç™½ç»“ç‚¹, å…¶nextæŒ‡å‘listå¤´ç»“ç‚¹
 	template<class T>
 	class list
 	{
@@ -96,7 +96,7 @@ namespace ministl
 	protected:
 		typedef list_node<T> list_node;
 		typedef list_iterator<T> iterator;
-		iterator node;//×îºóÒ»¸öµü´úÆ÷
+		iterator node;//æœ€åä¸€ä¸ªè¿­ä»£å™¨
 		node_ptr get_node()
 		{
 			return data_allocator.allocate(1);
@@ -104,15 +104,33 @@ namespace ministl
 		node_ptr new_node(const T& x)
 		{
 			node_ptr p = get_node();
-			p->data = x;
+			construct(&p->data, x);
 			p->next = p->pre = nullptr;
 			return p;
 		}
 	public:
 		//Construct
-		list():node()
+		list()
 		{
+			node.ptr = data_allocator.allocate(1);
 			node.ptr->next = node.ptr->pre = node.ptr;
+		}
+		template<class c>
+		list(c l, c r)
+		{
+			node.ptr = data_allocator.allocate(1);
+			node.ptr->next = node.ptr->pre = node.ptr;
+			for (auto it = l; it != r; it++)
+			{
+				push_back((*it));
+			}
+		}
+		list(size_type n, const T& val)
+		{
+			node.ptr = data_allocator.allocate(1);
+			node.ptr->next = node.ptr->pre = node.ptr;
+			while (n--)
+				push_back(val);
 		}
 		//Iterators
 		iterator begin()
@@ -122,6 +140,14 @@ namespace ministl
 		iterator end()
 		{
 			return iterator(node.ptr);
+		}
+		value_type& front()
+		{
+			return node.ptr->next->data;
+		}
+		value_type& back()
+		{
+			return node.ptr->pre->data;
 		}
 		//Capacity
 		bool empty()
@@ -181,6 +207,14 @@ namespace ministl
 			data_allocator.deallocate(pos.ptr,sizeof(list_node));
 			return iterator(tmp);
 		}
+		iterator erase(iterator first, iterator last)
+		{
+			first.ptr->pre->next = last.ptr;
+			last.ptr->pre = first.ptr->pre;
+			for (auto it = first; it != last; it++)
+				destroy(&it.ptr->data);
+			return first;
+		}
 		//The list container is extended by inserting new elements before the element at position.
 		iterator insert(iterator pos, const T& x)
 		{
@@ -198,17 +232,17 @@ namespace ministl
 				insert(pos, x);
 		}
 		//this will loop forever when first-last is in list's range
-		/*template<class InputIterator>
+		template<class InputIterator>
 		void insert(iterator pos, InputIterator first, InputIterator last)
 		{
 			for (auto it = first; it != last; it++)
 				insert(pos, (value_type)(*it));
-		}*/
-		void swap(list<T> rhs)
+		}
+		void swap(list<T>& rhs)
 		{
-			node_ptr tmp = node.ptr;
-			node.ptr = rhs.node.ptr;
-			rhs.node.ptr = tmp;
+			iterator tmp = node;
+			node = rhs.node;
+			rhs.node = tmp;
 		}
 		void assign(size_type n, const T& x)
 		{
@@ -248,18 +282,19 @@ namespace ministl
 			}
 		}
 
-		//bool single_digit (const int& value) { return (value<10); }
-		/*template<typename fun>
+		
+		template<typename fun>
 		void remove_if(fun f)
 		{
 			for (auto it = begin(); it != end();)
 			{
-				if (fun(*it))
+				//std::cout << "#" << *it << ' ';
+				if (f(*it))
 					it = erase(it);
 				else
 					it++;
 			}
-		}*/
+		}
 
 		void reverse()
 		{
@@ -281,23 +316,73 @@ namespace ministl
 					it++;
 			}
 		}
+		//void transfer(iterator position, iterator first, iterator last)
+		//{
+		//	if (position != last)   // å¦‚æœlast == position, åˆ™ç›¸å½“äºé“¾è¡¨ä¸å˜åŒ–, ä¸è¿›è¡Œæ“ä½œ  
+		//	{
+		//		(*(link_type((*last.node).prev))).next = position.node;  //ï¼ˆ1ï¼‰
+		//		(*(link_type((*first.node).prev))).next = last.node;  //ï¼ˆ2ï¼‰
+		//		(*(link_type((*position.node).prev))).next = first.node;  //ï¼ˆ3ï¼‰
+		//		link_type tmp = link_type((*position.node).prev);  //ï¼ˆ4ï¼‰
+		//		(*position.node).prev = (*last.node).prev;  //ï¼ˆ5ï¼‰
+		//		(*last.node).prev = (*first.node).prev;  //ï¼ˆ6ï¼‰
+		//		(*first.node).prev = tmp;  //ï¼ˆ7ï¼‰
+		//	}
+		//}
 		void transfer(iterator pos, iterator first, iterator last)
 		{
-			last.ptr->pre->next = pos.ptr;
-			pos.ptr->pre->next = first.ptr;
-			pos.ptr->pre = last.ptr->pre;
-			last.ptr->pre = first.ptr->pre;
-			first.ptr->pre->next = last.ptr;
-			first.ptr->pre = pos.ptr->pre;
-
+			if (pos != last)
+			{
+				last.ptr->pre->next = pos.ptr;
+				first.ptr->pre->next = last.ptr;
+				pos.ptr->pre->next = first.ptr;
+				auto tmp = pos.ptr->pre;
+				pos.ptr->pre = last.ptr->pre;
+				last.ptr->pre = first.ptr->pre;
+				first.ptr->pre = tmp;
+			}
 		}
-		void splice(iterator pos, list&, iterator i)
+		void splice(iterator pos, list<T>& rhs)
 		{
-			iterator j = i;
-			++j;
-			if (pos == i || pos == j)
-				return;
-			transger(pos, i, j);
+			if (*this != rhs)
+				transfer(pos, rhs.begin(), rhs.end());
+		}
+		void splice(iterator pos, list<T>& rhs, iterator first, iterator last)
+		{
+			if (*this != rhs)
+				transfer(pos, first, last);
+		}
+		void splice(iterator pos, list<T>& rhs, iterator it)
+		{
+			T tmp = *it;
+			insert(pos, tmp);
+			rhs.erase(it);
+		}
+		bool operator == (list<T>& rhs)
+		{
+			if (size() != rhs.size())
+				return false;
+			auto i = begin();
+			auto j = rhs.begin();
+			while (i != end())
+				if (*i != *j)
+					return false;
+				else
+					i++, j++;
+			return true;
+		}
+		bool operator !=(list<T>& rhs)
+		{
+			return !(*this == rhs);
+		}
+		list<T>& operator=(list<T>& rhs)
+		{
+			clear();
+			node.ptr = data_allocator.allocate(1);
+			node.ptr->next = node.ptr->pre = node.ptr;
+			for (auto it = rhs.begin(); it != rhs.end(); i++)
+				insert(begin(),*it);
+			return *this;
 		}
 	};
 }
