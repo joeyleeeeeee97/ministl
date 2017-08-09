@@ -17,8 +17,8 @@ namespace ministl
 		{
 			if (empty())
 			{
-				cerr << "Empty !" << endl;
-				exit(1);
+				std::cerr << "Empty !" << std::endl;
+				std::exit(1);
 			}
 		}
 	public:
@@ -39,7 +39,9 @@ namespace ministl
 		value_type& back()
 		{
 			check();
-			return *(c.end() - 1);
+			auto tmp = c.end();
+			tmp--;
+			return *(tmp);
 		}
 		const value_type& front() const
 		{
@@ -60,6 +62,25 @@ namespace ministl
 			check();
 			c.pop_front();
 		}
+		bool operator==( queue<T>& rhs)
+		{
+			return c == rhs.c;
+		}
+		bool operator!=( queue<T>& rhs)
+		{
+			return !(*this == rhs);
+		}
+		queue<T>& swap(queue<T>& rhs)
+		{
+			c.swap(rhs.c);
+			return *this;
+		}
+		
 	};
+	template<typename T>
+	void swap(queue<T> &a, queue<T> &b)
+	{
+		a.swap(b);
+	}
 }
 #endif

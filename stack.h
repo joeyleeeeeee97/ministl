@@ -30,8 +30,8 @@ namespace ministl
 				return *(c.begin());
 			else
 			{
-				cerr << "Top on empty Stack!" << endl;
-				exit(1);
+				std::cerr << "Top on empty Stack!" << std::endl;
+				std::exit(1);
 			}
 		}
 		void pop()
@@ -40,15 +40,33 @@ namespace ministl
 				c.pop_front();
 			else
 			{
-				cerr << "pop on empty Stack!" << endl;
-				exit(1);
+				std::cerr << "pop on empty Stack!" << std::endl;
+				std::exit(1);
 			}
 		}
 		void push(const value_type& x)
 		{
 			c.push_front(x);
 		}
+		stack<T> swap(stack<T>& rhs)
+		{
+			c.swap(rhs.c);
+			return *this;
+		}
+		bool operator==(stack<T> &rhs)
+		{
+			return c == rhs.c;
+		}
+		bool operator!=(stack<T>& rhs)
+		{
+			return c != rhs.c;
+		}
 	};
+	template<typename T>
+	void swap(stack<T>& a, stack<T>& b)
+	{
+		a.swap(b);
+	}
 }
 
 #endif
