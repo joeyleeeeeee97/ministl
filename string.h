@@ -102,13 +102,14 @@ namespace ministl
 		}
 		void reserve(size_type res_arg = 0)
 		{
-			if (res_arg < capacity())
+			if (res_arg > capacity())
 			{
 				iterator new_start = data_allocator.allocate(size() + res_arg);
 				std::uninitialized_copy(start, finish, new_start);
 				finish = new_start + size();
 				End = finish + res_arg;
-				data_allocator.deallocate(start, size());			
+				if(start)
+					data_allocator.deallocate(start, size());			
 				start = new_start;
 			}
 		}
