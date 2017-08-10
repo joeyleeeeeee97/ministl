@@ -370,6 +370,61 @@ namespace ministl
 		{
 			return string(start + pos, n);
 		}
+		size_t rfind(string& rhs, size_t pos = 0)
+		{
+			if (pos == 0) pos = size();
+			for (auto it = std::min(start + pos, finish - 1); it != start -1 ; it--)
+			{
+				size_t i;
+				for (i = 0; i < rhs.size();)
+					if (rhs[i] == *(it + i))
+						i++;
+					else
+						break;
+				if (i == rhs.size())
+					return it - start;
+			}
+			return size_t(-1);
+		}
+		size_t rfind(const char& c, size_t pos = 0)
+		{
+			if (pos == 0) pos = size();
+			for (auto it = std::min(finish - 1,start+pos); it != start; it--)
+			{
+				if (*it == c)
+					return it - start;
+			}
+			return size_t(-1);
+		}
+		size_t rfind(const char* str)
+		{
+			return rfind(string(str));
+		}
+		size_t find_first_of(const string& rhs, size_t pos = 0)
+		{
+			for (auto it = start + pos; it != finish; it++)
+			{
+				auto i = rhs.start;
+				while (i != rhs.finish)
+				{
+					if (*i == *it)
+						break;
+					i++;
+				}
+				if (i != rhs.finish)
+					return it - start;
+			}
+			return (size_t)-1;
+		}
+		size_t find_first_of(const char& c, size_t pos = 0)
+		{
+			for (auto it = start + pos; it != finish; it++)
+			{
+				if (*it == c)
+					return it - start;
+			}
+			return (size_t)-1;
+		}
 	};
 
 }
