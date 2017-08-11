@@ -302,25 +302,22 @@ namespace ministl
 		}
 		int compare(const string& rhs)
 		{
-			if (size() > rhs.size())
-				return 1;
-			else if (size() < rhs.size())
+			iterator i = start, j = rhs.start;
+			while (i != finish && j!=rhs.finish)
+			{
+				if ((*i) > (*j))
+					return 1;
+				else if ((*i) < (*j))
+					return -1;
+				else
+					i++, j++;
+			}
+			if (i == finish&&j == rhs.finish)
+				return 0;
+			else if (i == finish)
 				return -1;
 			else
-			{
-				iterator i = start, j = rhs.start;
-				while (i != finish)
-				{
-					if ((*i) > (*j))
-						return 1;
-					else if ((*i) < (*j))
-						return -1;
-					else
-						i++, j++;
-				}
-				return 0;
-			}
-			return 0;
+				return 1;
 		}
 		size_type copy(char* s, size_type n, size_type pos = 0) const
 		{
@@ -339,7 +336,7 @@ namespace ministl
 			for (auto it = start + pos; it != finish; it++)
 			{
 				auto i = it, j = str.start;
-				while (*i == *j)
+				while (j<str.finish && *i == *j)
 					i++, j++;
 				if (j == str.finish )
 					return it - start;
@@ -366,7 +363,7 @@ namespace ministl
 				return size_type(-1);
 			}
 		}
-		string substr(size_t n = 0, size_t pos = 0)
+		string substr(size_t pos = 0, size_t n = 0)
 		{
 			return string(start + pos, n);
 		}
@@ -424,6 +421,91 @@ namespace ministl
 					return it - start;
 			}
 			return (size_t)-1;
+		}
+		size_t find_last_of(const char &c, size_t pos = 0)
+		{
+			if (pos == 0) pos = size();
+			for (auto it = pos + start; it != start - 1; it--)
+				if (*it == c)
+					return it - start;
+			return (size_t)-1;
+		}
+		size_t find_last_of(const char* str, size_t pos, size_t len)
+		{
+			size_t l = 0;
+			for (size_t i = 0; str[i] != '\0'; i++)
+				l++;
+			for (auto it = start + pos; it != start + pos - len; it--)
+			{
+				size_t i;
+				for (i = 0; str[i] != '\0'; i++)
+					if (str[i] == *it)
+						break;
+				if (str[i] != '\0') return it - start;
+			}
+			return size_t(-1);
+		}
+		size_t find_last_of(const string& rhs, size_t pos)
+		{
+			for (auto it = start + pos; it != start - 1; it--)
+			{
+				size_t i = 0;
+				while (rhs.start + i != rhs.finish)
+					if (*it == *(start + i))
+						break;
+					else
+						i++;
+				if (rhs.size() != i)	return it - start;
+			}
+			return size_t(-1);
+		}
+		size_t find_first_not_of(const string& rhs)
+		{
+			for (auto it = start; it != finish; it++)
+			{
+				size_t i = 0;
+				while (i < rhs.size())
+					if (*(rhs.start + i) == *it)
+						break;
+					else
+						i++;
+				if (i == rhs.size()) return it - start;
+			}
+			return size_t(-1);
+		}
+		size_t find_last_not_of(const string& rhs,size_t pos)
+		{
+			for (auto it = start + pos; it != start - 1; it--)
+			{
+				size_t i = 0;
+				while (i < rhs.size())
+					if (*(rhs.start + i) == *it)
+						break;
+					else
+						i++;
+				if (i == rhs.size()) return it - start;
+			}
+			return size_t(-1);
+		}
+		bool operator!=(const string& rhs)
+		{
+			return !(*this == rhs);
+		}
+		bool operator>(const string& rhs)
+		{
+			return compare(rhs) > 0;
+		}
+		bool operator>=(const string& rhs)
+		{
+			return compare(rhs) >= 0;
+		}
+		bool operator<(const string& rhs)
+		{
+			return compare(rhs) < 0;
+		}
+		bool operator<=(const string& rhs)
+		{
+			return compare(rhs) <= 0;
 		}
 	};
 
