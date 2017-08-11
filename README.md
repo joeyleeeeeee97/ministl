@@ -4,10 +4,10 @@
 		容器      
 		vector  (测试完成）  
 		list  （测试完成）    
-		string
+		string	  (测试完成）  
 		deque   
-		stack   
-		queue
+		stack     (测试完成）  
+		queue	  (测试完成）  
 
 	迭代器     仅前向迭代器和随机迭代器   
 	
