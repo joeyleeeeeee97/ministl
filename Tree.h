@@ -33,11 +33,11 @@ namespace ministl
 		{
 			if (node->right == NULL)
 			{
-				if (node->parent->key > node->key)
+				if (node->parent!=NULL && node->parent->key > node->key)
 					node = node->parent;
 				else
 				{
-					std::cerr << "out of range" << std::endl;
+					node = NULL;
 					return;
 				}
 			}
@@ -57,7 +57,7 @@ namespace ministl
 					node = node->parent;
 				else
 				{
-					std::cerr << "out of range" << std::endl;
+					//std::cerr << "out of range" << std::endl;
 					return;
 				}
 			}
@@ -77,6 +77,10 @@ namespace ministl
 		typedef BSnode<K, T>* ptr;
 		typedef  BStree_iterator<K, T> self;
 		BStree_base_iterator<K,T> p;
+		BStree_iterator()
+		{
+			p.node = NULL;
+		}
 		BStree_iterator(ptr _p)
 		{
 			p.node = _p;
@@ -90,6 +94,14 @@ namespace ministl
 		{
 			p.decrement();
 			return *this;
+		}
+		bool operator!=(const  BStree_iterator<K, T>& rhs)
+		{
+			return !(*this == rhs);
+		}
+		bool operator==(const  BStree_iterator<K, T>& rhs)
+		{
+			return this->p.node == rhs.p.node;
 		}
 		T operator*()
 		{
@@ -110,6 +122,7 @@ namespace ministl
 		typedef size_t size_type;
 		typedef BSnode<K,T>* node_ptr;
 		typedef BStree<K, T> self;
+		typedef BStree_iterator<K,T> iterator;
 	private:
 		node_ptr node;
 		std::allocator<BSnode<K,T>> data_allocator;
@@ -125,18 +138,45 @@ namespace ministl
 		}
 	public:
 		BStree() :node(NULL) {}
-		/*~BStree()
+		bool empty()
 		{
-			del(node);
-		}*/
+			return node == NULL;
+		}
+		size_type size()
+		{
+			size_t cnt = 0;
+			for (auto it = begin(); it != end(); it++)
+				cnt++;
+			return cnt;
+		}
+		iterator begin()
+		{
+			if (node == NULL)
+			{
+				iterator t(NULL);
+				return t;
+			}
+			iterator it(node);
+			while (it.p.node->left != NULL)
+				it.p.node = it.p.node->left;
+			return it;
+		}
+		iterator end()
+		{
+		//	BStree_base_iterator<K,T> n = BStree_base_iterator(NULL);
+			iterator it(NULL);
+			
+			return  (it);
+		}
 		node_ptr root()
 		{
 			return node;
 		}
-		self& insert(const key_value& key, const value_type& val)
+		iterator insert(const key_value& key, const value_type& val)
 		{
 			node = insert_aux(node, NULL, key, val);
-			return *this;
+			//return *this;
+			return iterator(node);
 		}
 		node_ptr insert_aux(node_ptr p, node_ptr pre, const key_value& key, const value_type& val)
 		{
@@ -150,19 +190,27 @@ namespace ministl
 				p->right = insert_aux(p->right, p, key, val);
 			return p;
 		}
-		value_type find(node_ptr p, const key_value& key)
+		iterator find(const key_value& key)
+		{
+			return find_aux(node, key);
+		}
+		iterator find_aux(node_ptr p, const key_value& key)
 		{
 			if (!p)
 			{
-				std::cerr << "cant find it!\n";
-				return value_type();
+				//std::cerr << "cant find it!\n";
+				return NULL;
 			}
 			if (p->key == key)
-				return p->data;
+				return iterator(p);
 			else if (p->key > key)
-				return find(p->left, key);
+				return find_aux(p->left, key);
 			else
-				return find(p->right, key);
+				return find_aux(p->right, key);
+		}
+		void clear()
+		{
+			del(node);
 		}
 		void del(node_ptr link)
 		{
@@ -171,6 +219,7 @@ namespace ministl
 			if (link->right)
 				del(link->right);
 			delete(link);
+			node = NULL;
 		}
 	};
 	//Trie Tree
