@@ -56,13 +56,16 @@ namespace ministl
 		{
 			if (node->left == NULL)
 			{
-				if (node->parent->key < node->key)
-					node = node->parent;
-				else
+				ptr pre = node->parent;
+				while (pre != NULL&&node == pre->left)
 				{
-					//std::cerr << "out of range" << std::endl;
-					return;
+					node = pre;
+					pre = node->parent;
 				}
+				if (pre == NULL)
+					node = NULL;
+				else
+					node = pre;
 			}
 			else
 			{
@@ -126,6 +129,8 @@ namespace ministl
 		typedef BSnode<K,T>* node_ptr;
 		typedef BStree<K, T> self;
 		typedef BStree_iterator<K,T> iterator;
+		//static iterator end(NULL);
+
 	private:
 		node_ptr node;
 		std::allocator<BSnode<K,T>> data_allocator;
@@ -231,6 +236,36 @@ namespace ministl
 				delete(it);
 			}
 		}
+		iterator lower_bound_aux(node_ptr p, const key_value& x)
+		{
+			if (!p)
+				return iterator(NULL);
+			if (p->data >= x)
+			{
+				auto tmp = lower_bound_aux(p->left, x);
+				if (tmp.p.node != NULL)
+					return tmp;
+				else
+					return iterator(p);
+			}
+			else
+				return lower_bound_aux(p->right, x);
+		}
+		iterator upper_bound_aux(node_ptr p, const key_value& x)
+		{
+			if (!p)
+				return iterator(NULL);
+			if (p->data > x)
+			{
+				auto tmp = upper_bound_aux(p->left, x);
+				if (tmp.p.node != NULL)
+					return tmp;
+				else
+					return iterator(p);
+			}
+			else
+				return upper_bound_aux(p->right, x);
+		}
 	public:
 		BStree() :node(NULL) {}
 		bool empty()
@@ -259,9 +294,7 @@ namespace ministl
 		}
 		iterator end()
 		{
-		//	BStree_base_iterator<K,T> n = BStree_base_iterator(NULL);
-			iterator it(NULL);
-			
+			iterator it(NULL);		
 			return  (it);
 		}
 		node_ptr root()
@@ -277,6 +310,14 @@ namespace ministl
 		iterator find(const key_value& key)
 		{
 			return find_aux(node, key);
+		}
+		iterator lower_bound(const key_value& x)
+		{
+			return lower_bound_aux(node, x);
+		}
+		iterator upper_bound(const key_value& x)
+		{
+			return upper_bound_aux(node, x);
 		}
 		void erase(iterator pos)
 		{
