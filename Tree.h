@@ -33,13 +33,16 @@ namespace ministl
 		{
 			if (node->right == NULL)
 			{
-				if (node->parent!=NULL && node->parent->key > node->key)
-					node = node->parent;
-				else
+				ptr pre = node->parent;
+				while (pre != NULL&&node == pre->right)
 				{
-					node = NULL;
-					return;
+					node = pre;
+					pre = node->parent;
 				}
+				if (pre == NULL)
+					node = NULL;
+				else
+					node = pre;
 			}
 			else
 			{
@@ -136,6 +139,98 @@ namespace ministl
 			p->parent = pre;
 			return p;
 		}
+		node_ptr insert_aux(node_ptr p, node_ptr pre, const key_value& key, const value_type& val)
+		{
+			if (!p)
+			{
+				return new_node(key, val, pre);
+			}
+			if (p->key > key)
+				p->left = insert_aux(p->left, p, key, val);
+			else if (p->key < key)
+				p->right = insert_aux(p->right, p, key, val);
+			return p;
+		}
+		iterator find_aux(node_ptr p, const key_value& key)
+		{
+			if (!p)
+			{
+				//std::cerr << "cant find it!\n";
+				return NULL;
+			}
+			if (p->key == key)
+				return iterator(p);
+			else if (p->key > key)
+				return find_aux(p->left, key);
+			else
+				return find_aux(p->right, key);
+		}
+		void del(node_ptr link)
+		{
+			if (link->left)
+				del(link->left);
+			if (link->right)
+				del(link->right);
+			delete(link);
+			node = NULL;
+		}
+		void erase_aux(node_ptr p)
+		{
+			if (p->left == NULL&&p->right == NULL)
+			{
+				if (p->parent == NULL)
+				{
+					node = NULL;
+				}
+				else if (p->parent->left!=NULL && p->parent->left->key == p->key)
+					p->parent->left = NULL;
+				else if (p->parent->right!=NULL && p->parent->right->key == p->key)
+					p->parent->right = NULL;
+				delete(p);
+			}
+			else if (p->left == NULL&&p->right != NULL)
+			{
+				if (p->parent == NULL)
+				{
+					node = p->right,node->parent = NULL;
+				}
+				else if (p->parent->left!=NULL && p->parent->left->key == p->key)
+					p->parent->left = p->right, p->right->parent = p->parent;
+				else if (p->parent->right!=NULL && p->parent->right->key == p->key)
+					p->parent->right = p->right, p->right->parent = p->parent;
+				delete(p);
+			}
+			else if (p->left != NULL&&p->right == NULL)
+			{
+				if (p->parent == NULL)
+				{
+					node = p->left, node->parent = NULL;
+				}
+				else if (p->parent->left!=NULL && p->parent->left->key == p->key)
+					p->parent->left = p->left, p->left->parent = p->parent;
+				else if (p->parent->right!=NULL && p->parent->right->key == p->key)
+					p->parent->right = p->left, p->left->parent = p->parent;
+				delete(p);
+			}
+			else
+			{
+
+				node_ptr it = p->left;
+				node_ptr tmp = p;
+				while (it->right != NULL)
+				{
+					tmp = it, it = it->right;
+				}
+				if (tmp == p)
+					p->left = NULL;
+				else if (it->left != NULL)
+					it->left->parent = tmp, tmp->right = it->left;
+				else
+					tmp->right = NULL;
+				p->key = it->key, p->data = it->data;
+				delete(it);
+			}
+		}
 	public:
 		BStree() :node(NULL) {}
 		bool empty()
@@ -144,6 +239,7 @@ namespace ministl
 		}
 		size_type size()
 		{
+			if (empty()) return 0;
 			size_t cnt = 0;
 			for (auto it = begin(); it != end(); it++)
 				cnt++;
@@ -178,48 +274,18 @@ namespace ministl
 			//return *this;
 			return iterator(node);
 		}
-		node_ptr insert_aux(node_ptr p, node_ptr pre, const key_value& key, const value_type& val)
-		{
-			if (!p)
-			{
-				return new_node(key, val,pre);
-			}
-			if (p->key > key)
-				p->left = insert_aux(p->left, p, key, val);
-			else if (p->key < key)
-				p->right = insert_aux(p->right, p, key, val);
-			return p;
-		}
 		iterator find(const key_value& key)
 		{
 			return find_aux(node, key);
 		}
-		iterator find_aux(node_ptr p, const key_value& key)
+		void erase(iterator pos)
 		{
-			if (!p)
-			{
-				//std::cerr << "cant find it!\n";
-				return NULL;
-			}
-			if (p->key == key)
-				return iterator(p);
-			else if (p->key > key)
-				return find_aux(p->left, key);
-			else
-				return find_aux(p->right, key);
+			erase_aux(pos.p.node);
 		}
+		
 		void clear()
 		{
 			del(node);
-		}
-		void del(node_ptr link)
-		{
-			if (link->left)
-				del(link->left);
-			if (link->right)
-				del(link->right);
-			delete(link);
-			node = NULL;
 		}
 	};
 	//Trie Tree
