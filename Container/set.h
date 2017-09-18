@@ -1,12 +1,12 @@
 #pragma once
 #ifndef _SET_H
 #define _SET_H
-//ÏÈÔİÊ±ÓÃ¶ş·ÖËÑË÷Ê÷À´Ğ´£¬RB-Tree²»Ì«ºÃĞ´¡£¡£¡£¡£
+//å…ˆæš‚æ—¶ç”¨äºŒåˆ†æœç´¢æ ‘æ¥å†™ï¼ŒRB-Treeä¸å¤ªå¥½å†™ã€‚ã€‚ã€‚ã€‚
 #include"Tree.h"
 #include<utility>
 namespace ministl
 {
-	//ÓÃĞ¡ÓÚºÅ±È½Ï
+	//ç”¨å°äºå·æ¯”è¾ƒ
 	template<typename T>
 	class set
 	{
