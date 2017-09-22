@@ -8,6 +8,7 @@
 		deque   
 		stack     (测试完成）  
 		queue	  (测试完成）  
+		BStree(二叉搜索树） （测试完成）
 		map
 		set	(基于二叉搜索树）
 
