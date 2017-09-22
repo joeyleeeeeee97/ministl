@@ -219,20 +219,23 @@ namespace ministl
 			}
 			else
 			{
-
 				node_ptr it = p->left;
 				node_ptr tmp = p;
 				while (it->right != NULL)
 				{
 					tmp = it, it = it->right;
 				}
-				if (tmp == p)
-					p->left = NULL;
-				else if (it->left != NULL)
-					it->left->parent = tmp, tmp->right = it->left;
-				else
-					tmp->right = NULL;
 				p->key = it->key, p->data = it->data;
+				if (tmp != p)
+				{
+					tmp->right = it->left;
+				}
+				else
+				{
+					tmp->left = it->left;
+				}
+				if (it->left != NULL)
+					it->left->parent = tmp;
 				delete(it);
 			}
 		}
@@ -266,6 +269,17 @@ namespace ministl
 			else
 				return upper_bound_aux(p->right, x);
 		}
+		void erase_val_aux(node_ptr p,const key_value& key)
+		{
+			if (p == NULL)
+				return;
+			if (p->key == key)
+				erase_aux(p);
+			else if (p->key < key)
+				erase_val_aux(p->right, key);
+			else if (p->key > key)
+				erase_val_aux(p->left, key);
+		}
 	public:
 		BStree() :node(NULL) {}
 		bool empty()
@@ -297,6 +311,15 @@ namespace ministl
 			iterator it(NULL);		
 			return  (it);
 		}
+		iterator find_max()
+		{
+			node_ptr p = node;
+			if (p == NULL)
+				return iterator(NULL);
+			while (p->right != NULL)
+				p = p->right;
+			return iterator(p);
+		}
 		node_ptr root()
 		{
 			return node;
@@ -323,7 +346,10 @@ namespace ministl
 		{
 			erase_aux(pos.p.node);
 		}
-		
+		void erase(const key_value& x)
+		{
+			erase_val_aux(node, x);
+		}
 		void clear()
 		{
 			del(node);
