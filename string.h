@@ -12,7 +12,8 @@ namespace ministl
 		typedef char value_type;
 	private:
 		char *start, *End, *finish;
-		allocator<char> data_allocator;
+		std::allocator<char> data_allocator;
+		//重新构造元素 
 		void reallocate()
 		{
 			int old_size = size();
@@ -23,11 +24,41 @@ namespace ministl
 			finish = new_start + old_size;
 			End = new_start + new_size;
 		}
+		//移动构造元素
+		/*void reallocate()
+		{
+			int old_size = size();
+			int new_size = size() ? 2 * size() : 1;
+			char* new_start = data_allocator.allocate(new_size);
+			char* pos = new_start;
+			char* old_pos = start;
+			for (int i = 0; i < old_size; i++)
+				data_allocator.construct(pos++, std::move(*old_pos)), old_pos++;
+			data_allocator.deallocate(start, old_size);
+			start = new_start;
+			finish = new_start + old_size;
+			End = new_start + new_size;
+		}*/
 	public:
+		//debug
+		void print()
+		{
+			for (auto it = start; it != finish; it++)
+				std::cout << *it;
+			std::cout << std::endl;
+		}
 		//Construct
 		string()
 		{
 			start = End = finish = nullptr;
+		}
+		string(const string& rhs)
+		{
+			assign(rhs);
+		}
+		string(string&& rhs)noexcept :start(rhs.start),End(rhs.End),finish(rhs.finish)
+		{
+			rhs.start = rhs.End = rhs.finish = nullptr;
 		}
 		string(const char* s)
 		{
