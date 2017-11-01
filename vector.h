@@ -1,9 +1,10 @@
-#pragma once
+ï»¿#pragma once
 #ifndef _VECTOR_H
 #define _VECTOR_H
 #include<memory>
 #include"construct.h"
 #include<algorithm>
+#include"allocator.h"
 namespace ministl
 {
 	template<class T, class Alloc = std::allocator<T> >
@@ -19,56 +20,49 @@ namespace ministl
 	private:
 		typedef Alloc Data_allocator;
 		Data_allocator data_allocator;
+		void DestroyAndDeallocateAll()
+		{
+		//	Print();
+			if (capacity() == 0) return;
+			for (iterator it = start; it != End; it++)
+				destroy(it);
+			data_allocator.deallocate(start, end_of_storage - start);
+			cout << "ok" << endl;
+		}
 	protected:
 		iterator start, End, end_of_storage;
-		//¼ì²éÊÇ·ñ¹»¿Õ¼ä
-		void check()
+		void reallocate(size_t new_size = 0)
 		{
-			if (max_size() == size())
-				reallocate();
-		}
-		void check(size_t num)
-		{
-			if (capacity() < num)
-				reserve(size() + num);
-		}
-		void reallocate()
-		{
-			int new_size = size() == 0 ? 1 : 2 * size();
-			iterator pos = data_allocator.allocate(new_size), tmp;
-			if (pos == nullptr)
+			if (new_size == 0)
+				new_size = size() == 0 ? 1 : 2 * size();
+			iterator new_start = data_allocator.allocate(new_size);
+			if (new_start == nullptr)
 			{
 				std::cerr << "out of memory" << std::endl;
 				std::exit(1);
 			}
-			tmp = std::uninitialized_copy(start, End, pos);
-			for (iterator it = start; it != End; it++)
-				destroy(it);
-			data_allocator.deallocate(start, end_of_storage - start);
-			start = pos;
-			End = tmp;
+			iterator new_End = uninitialized_copy(start, End, new_start);
+			DestroyAndDeallocateAll();
+			start = new_start;
+			End = new_End;
 			end_of_storage = start + new_size;
 		}
+	public:
+		//for Debug
 		void Print()
 		{
+		/*	cout << "size() is " << size() << endl;
+			cout << " capacity() is " << capacity() << endl;*/
 			for (iterator it = start; it != End; it++)
 				cout << *it << endl;
-			cout << endl << endl;
 		}
-	public:
-		//construct
+		//Constructor
 		vector()
 		{
-			start = data_allocator.allocate(1);
-			End = end_of_storage = start;
+			End = end_of_storage = start = nullptr;
 		}
-		vector(int n, value_type val = value_type())
+		vector(size_t n, value_type val = value_type())
 		{
-			if (n <= 0)
-			{
-				std::cerr << "²»ÄÜÊÇ¸ºÊýÅ¶£¡" << std::endl;
-				std::exit(1);
-			}
 			start = data_allocator.allocate(n);
 			End = end_of_storage = start + n;
 			std::uninitialized_fill_n(start, n, val);
@@ -82,35 +76,24 @@ namespace ministl
 		{
 			assign(rhs.start, rhs.End);
 		}
-		vector (vector<T, Alloc> &&rhs)
+		vector(vector<T, Alloc> &&rhs)
 		{
 			start = rhs.start;
 			End = rhs.End;
 			end_of_storage = rhs.end_of_storage;
-			rhs.start = rhs.end_of_storage = rhs.End = nullptr;
+			rhs.start = rhs.end_of_storage = rhs.End = nullptr;//å³å€¼å¼•ç”¨
 		}
 		//Destructor
-		~vector()
-		{
-			for (iterator it = start; it != End; it++)
-				destroy(it);
-			//data_allocator.deallocate(start, end_of_storage - start);
-		}
+		~vector() { DestroyAndDeallocateAll(); }
 		//Iterator
-		iterator begin()
-		{
-			return start;
-		}
-		iterator end()
-		{
-			return End;
-		}
+		iterator begin(){ return start;	}
+		iterator end(){	return End;}
 		//Elemnt access
 		value_type& operator [](size_type n)
 		{
 			if (n >= size())
 			{
-				std::cerr << "Ô½½ç£¡" << std::endl;
+				std::cerr << "Out of range" << std::endl;
 				std::exit(1);
 			}
 			return *(start + n);
@@ -119,7 +102,7 @@ namespace ministl
 		{
 			if (empty())
 			{
-				std::cerr << "¿ÕµÄ£¡" << std::endl;
+				std::cerr << "front on empty vector" << std::endl;
 				std::exit(1);
 			}
 			return *(start);
@@ -128,7 +111,7 @@ namespace ministl
 		{
 			if (empty())
 			{
-				std::cerr << "¿ÕµÄ£¡" << std::endl;
+				std::cerr << "back on empty vector" << std::endl;
 				std::exit(1);
 			}
 			return *(End - 1);
@@ -138,42 +121,37 @@ namespace ministl
 		{
 			return End - start;
 		}
-		size_type max_size()
+		size_type capacity()
 		{
 			return end_of_storage - start;
 		}
-		size_type capacity()
-		{
-			return end_of_storage - End;
-		}
-		void resize(size_type n, value_type val = value_type())
-		{
-			iterator pos = data_allocator.allocate(n);
-			size_type sz = size();
-			if (n <= sz)
+		//æ²¡æœ‰å¿…è¦æ¯æ¬¡éƒ½é‡æ–°åˆ†é…ç©ºé—´ å¯ä»¥åˆ†ä¸º å°äºŽsizeçš„æƒ…å†µ å°äºŽcapçš„æƒ…å†µ å¤§äºŽcapçš„æƒ…å†µ
+		void resize(size_type new_size, value_type val = value_type())
+		{	
+			if (new_size < size())
 			{
-				End = end_of_storage = std::uninitialized_copy_n(start, n, pos);
-				start = pos;
+				for (iterator it = start + new_size; it != End; it++)
+				{
+					destroy(it);
+				}
+				End = start + new_size;
+			}
+			else if (new_size < capacity())
+			{
+				std::uninitialized_fill_n(End, new_size - size(), val);
+				End = start + new_size;
 			}
 			else
 			{
-				End = std::uninitialized_copy(start, End, pos);
-				end_of_storage = std::uninitialized_fill_n(End, n - sz, val);
-				start = pos;
-				End = pos + n;
+				reallocate(new_size);
+				std::uninitialized_fill_n(End, new_size - size(), val);
+				End = start + new_size;
 			}
 		}
 		void reserve(size_type n)
 		{
-			if (n > size())
-			{
-				iterator pos = data_allocator.allocate(n);
-				for (auto it = start; it != End; it++)
-					destroy(it);
-				End = std::uninitialized_copy(start, End, pos);
-				start = pos;
-				end_of_storage = start + n;
-			}
+			if (n <= capacity()) return;
+			reallocate(n);
 		}
 		bool empty()
 		{
@@ -182,48 +160,45 @@ namespace ministl
 		//Modifiers
 		void push_back(value_type data)
 		{
-			check();
+			if (capacity() == size())
+				reallocate();
 			construct(End++, data);
 		}
 		void pop_back()
 		{
 			if (empty())
 			{
-				std::cerr << "¿ÕµÄ!" << std::endl;
+				std::cerr << "ï¿½Õµï¿½!" << std::endl;
 				std::exit(1);
 			}
 			End--;
 			destroy(End);
 		}
 		template<class InputIterator>
-		void assign(InputIterator first, InputIterator last)//ÏÈÖ»Éè¼ÆÖ¸ÕëµÄ
+		void assign(InputIterator first, InputIterator last)//ï¿½ï¿½Ö»ï¿½ï¿½ï¿½Ö¸ï¿½ï¿½ï¿½
 		{
-			for (iterator it = start; it != End; it++)
-				destroy(it);
-			size_t old_sz = capacity();
-			if (old_sz != 0)
-				data_allocator.deallocate(start, old_sz);
+			DestroyAndDeallocateAll();
 			start = data_allocator.allocate(last - first);
 			End = end_of_storage = uninitialized_copy(first, last, start);
 		}
 		void assign(size_type n, const value_type &v)
 		{
-			for (iterator it = start; it != End; it++)
-				destroy(it);
-			data_allocator.deallocate(start, end_of_storage - start);
+			DestroyAndDeallocateAll();
 			start = data_allocator.allocate(n);
 			End = end_of_storage = start + n;
 			uninitialized_fill_n(start, n, v);
 		}
 		iterator insert(iterator pos, const value_type &v)
 		{
-			if (empty())
+			if (pos == end())
 			{
 				push_back(v);
-				return begin();
+				return &back();
 			}
+			if (size() == capacity())
+				reallocate();
 			iterator new_end = End + 1;
-			construct(End, *(End - 2));
+			data_allocator.construct(new_end, v);
 			std::copy_backward(pos, End, new_end);
 			*pos = v;
 			End = new_end;
@@ -233,7 +208,8 @@ namespace ministl
 		iterator insert(iterator pos, const size_type &n, const value_type &val)
 		{
 			size_type index = pos - start;
-			check(n);
+			if (n + size() > capacity())
+				reserve(n + size());
 			pos = start + index;
 			iterator new_end = End + n;
 			size_type after_num = End - pos;
@@ -243,27 +219,25 @@ namespace ministl
 				End += n;
 				std::copy_backward(pos, End - n, End);
 				std::fill(pos, pos + n, val);
-				return pos;
+				return pos + n;
 			}
 			else
 			{
-				/*std::uninitialized_fill_n(End, n - after_num, val);
-				std::uninitialized_copy(pos, End, End + n - after_num);
-				std::fill(pos, End, val);
-				End += n;*/
 				iterator old_end = End;
 				std::uninitialized_fill_n(End, n - after_num, val);
 				End += n - after_num;
 				std::uninitialized_copy(pos, old_end, End);
 				End += after_num;
 				std::fill(pos, old_end, val);
+				return pos + n;
 			}
 		}
 		template<class InputIterator>
-		void insert(iterator pos, InputIterator first, InputIterator last)//»¹ÊÇÏÈÖ»Ð´ Ç°Ïòµü´úÆ÷
+		void insert(iterator pos, InputIterator first, InputIterator last)//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö»Ð´ Ç°ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 		{
-			size_type add_num = last - first, index = pos - start,after_num = End - pos;
-			check(add_num);
+			size_type add_num = last - first, index = pos - start, after_num = End - pos;
+			if (add_num + size() > capacity())
+				reserve(add_num + size());
 			pos = start + index;
 			if (pos > End) pos = End;
 			if (pos <= End - add_num)
@@ -300,9 +274,7 @@ namespace ministl
 		}
 		void clear()
 		{
-			for (iterator it = start; it != End; it++)
-				destroy(it);
-			data_allocator.deallocate(start, end_of_storage - start);
+			DestroyAndDeallocateAll();
 			End = start;
 		}
 		void swap(vector<T, Alloc> &rhs)
@@ -312,7 +284,7 @@ namespace ministl
 			tmp = End, End = rhs.End, rhs.End = tmp;
 			tmp = end_of_storage, end_of_storage = rhs.end_of_storage, rhs.end_of_storage = tmp;
 		}
-		bool operator==( vector<T,Alloc>& rhs)
+		bool operator==(vector<T, Alloc>& rhs)
 		{
 			if (size() != rhs.size())
 				return false;
@@ -330,7 +302,7 @@ namespace ministl
 				return true;
 			}
 		}
-		bool operator!=( vector<T,Alloc>& rhs)
+		bool operator!=(vector<T, Alloc>& rhs)
 		{
 			return !(*this == rhs);
 		}
@@ -342,6 +314,6 @@ namespace ministl
 			}
 		}
 	};
-		
+
 }
 #endif
