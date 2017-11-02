@@ -2,6 +2,8 @@
 #ifndef _STRING_H
 #define _STRING_H
 #include"allocator.h"
+#include <ostream>
+
 namespace ministl
 {
 	class string
@@ -11,54 +13,63 @@ namespace ministl
 		typedef char* iterator;
 		typedef char value_type;
 	private:
-		char *start, *End, *finish;
+		char *start, *end_of_storage, *End;
 		std::allocator<char> data_allocator;
-		//重新构造元素 
-		void reallocate()
+		void DeallocateAndDestory()
 		{
-			int old_size = size();
-			int new_size = size() ? 2 * size() : 1;
+			for (iterator it = start; it != end_of_storage; it++)
+				data_allocator.destroy(it);
+			data_allocator.deallocate(start, End - start);
+		}
+		//重新构造元素 
+		void reallocate(size_t new_size = 0)
+		{
+			size_t old_size = size();
+			if (new_size == 0)
+				new_size = size() ? 2 * size() : 1;
 			char* new_start = data_allocator.allocate(new_size);
 			std::uninitialized_copy(start, start + size(), new_start);
+			DeallocateAndDestory();
 			start = new_start;
-			finish = new_start + old_size;
-			End = new_start + new_size;
+			End = new_start + old_size;
+			end_of_storage = new_start + new_size;
 		}
 		//移动构造元素
 		/*void reallocate()
 		{
-			int old_size = size();
-			int new_size = size() ? 2 * size() : 1;
-			char* new_start = data_allocator.allocate(new_size);
-			char* pos = new_start;
-			char* old_pos = start;
-			for (int i = 0; i < old_size; i++)
-				data_allocator.construct(pos++, std::move(*old_pos)), old_pos++;
-			data_allocator.deallocate(start, old_size);
-			start = new_start;
-			finish = new_start + old_size;
-			End = new_start + new_size;
+		int old_size = size();
+		int new_size = size() ? 2 * size() : 1;
+		char* new_start = data_allocator.allocate(new_size);
+		char* pos = new_start;
+		char* old_pos = start;
+		for (int i = 0; i < old_size; i++)
+		data_allocator.construct(pos++, std::move(*old_pos)), old_pos++;
+		data_allocator.deallocate(start, old_size);
+		start = new_start;
+		End = new_start + old_size;
+		end_of_storage = new_start + new_size;
 		}*/
 	public:
 		//debug
 		void print()
 		{
-			for (auto it = start; it != finish; it++)
+			for (auto it = start; it != End; it++)
 				std::cout << *it;
 			std::cout << std::endl;
 		}
 		//Construct
 		string()
 		{
-			start = End = finish = nullptr;
+			start = end_of_storage = End = nullptr;
 		}
 		string(const string& rhs)
 		{
-			assign(rhs);
+			start = end_of_storage = End = nullptr;
+			append(rhs);
 		}
-		string(string&& rhs)noexcept :start(rhs.start),End(rhs.End),finish(rhs.finish)
+		string(string&& rhs)noexcept :start(rhs.start), end_of_storage(rhs.end_of_storage), End(rhs.End)
 		{
-			rhs.start = rhs.End = rhs.finish = nullptr;
+			rhs.start = rhs.end_of_storage = rhs.End = nullptr;
 		}
 		string(const char* s)
 		{
@@ -67,23 +78,23 @@ namespace ministl
 			else
 			{
 				int cnt = 0;
-				for(;s[cnt]!='\0';cnt++){}
+				for (; s[cnt] != '\0'; cnt++) {}
 				start = data_allocator.allocate(cnt);
 				std::uninitialized_copy_n(s, cnt, start);
-				End = finish = start + cnt;
+				end_of_storage = End = start + cnt;
 			}
 		}
 		string(size_type n, char c)
 		{
 			start = data_allocator.allocate(n);
 			std::uninitialized_fill_n(start, n, c);
-			End = finish = start + n;
+			end_of_storage = End = start + n;
 		}
 		string(const char* s, size_t n)
 		{
 			start = data_allocator.allocate(n);
 			std::uninitialized_copy_n(s, n, start);
-			finish = End = start + n;
+			End = end_of_storage = start + n;
 		}
 		//Iterator
 		iterator begin()
@@ -92,21 +103,22 @@ namespace ministl
 		}
 		iterator end()
 		{
-			return finish;
+			return End;
 		}
 
 		//Capacity
 		void clear()
 		{
-			finish = start;
+			DeallocateAndDestory();
+			End = start = end_of_storage = nullptr;
 		}
 		bool empty()const
 		{
-			return (start == finish);
+			return (start == End);
 		}
 		const size_type size() const
 		{
-			return finish - start;
+			return End - start;
 		}
 		const size_type length() const
 		{
@@ -114,7 +126,7 @@ namespace ministl
 		}
 		const size_type capacity() const
 		{
-			return End - start;
+			return end_of_storage - start;
 		}
 		void resize(size_type n)
 		{
@@ -124,7 +136,7 @@ namespace ministl
 		{
 			if (n <= size())
 			{
-				finish = start + n;
+				End = start + n;
 			}
 			else
 			{
@@ -133,16 +145,8 @@ namespace ministl
 		}
 		void reserve(size_type res_arg = 0)
 		{
-			if (res_arg > capacity())
-			{
-				iterator new_start = data_allocator.allocate(size() + res_arg);
-				std::uninitialized_copy(start, finish, new_start);
-				finish = new_start + size();
-				End = finish + res_arg;
-				if(start)
-					data_allocator.deallocate(start, size());			
-				start = new_start;
-			}
+			if (res_arg + size() < capacity()) return;
+			reallocate(res_arg + size());
 		}
 		//Modifiers
 		value_type& operator[](size_type index)
@@ -163,44 +167,54 @@ namespace ministl
 		}
 		value_type& back()
 		{
-			auto tmp = End;
-			tmp--;
-			return *tmp;
+			auto tmp = end();
+			return *(--tmp);
 		}
 		void push_back(const value_type& val)
 		{
 			if (size() == capacity())
 				reallocate();
-			*finish = val;
-			finish++;
+			*End = val;
+			End++;
 		}
 		void pop_back()
 		{
-			finish--;
+			if (empty())
+			{
+				std::cerr << "Error : pop_back() on empty String!" << std::endl;
+				exit(1);
+			}
+			End--;
 		}
 		void swap(string& rhs)
 		{
 			std::swap(start, rhs.start);
+			std::swap(end_of_storage, rhs.end_of_storage);
 			std::swap(End, rhs.End);
-			std::swap(finish, rhs.finish);
 		}
 		void append(const string& rhs)
 		{
-			size_type old_sz = size(), add_num = rhs.size();
-			size_type nsz = rhs.size() + size();
-			iterator new_start = data_allocator.allocate(nsz);
-			std::uninitialized_copy_n(start, old_sz, new_start);
-			std::uninitialized_copy_n(rhs.start, add_num, new_start + old_sz);
-			start = new_start;
-			End = finish = new_start + nsz;
+			if (rhs.empty()) return;
+			if (capacity()<size() + rhs.size()) reallocate(size() + rhs.size());
+			std::uninitialized_copy(rhs.start, rhs.end_of_storage, End);
+			End += rhs.size();
 		}
 		void append(const char* s)
 		{
-			append(string(s));
+			if (s == nullptr) return;
+			size_t cnt = 0;
+			for (; s[cnt] != '\0'; cnt++) {}
+			if (capacity() < size() + cnt)	reallocate(size() + cnt);
+			std::uninitialized_copy_n(s, cnt, End);
+			End += cnt;
 		}
 		void append(const char* s, size_t l, size_t r)
 		{
-			append(string(s + l, r - l));
+			if (r <= l ) return;
+			if (s == nullptr) return;
+			if (capacity()<size() + r - l - 1) reallocate(size() + r - l);
+			std::uninitialized_copy_n(s + l, r - l, End);
+			End += r - l;
 		}
 		string& operator+=(const char c)
 		{
@@ -215,8 +229,7 @@ namespace ministl
 		string operator+(const string& rhs)
 		{
 			string tmp(*this);
-			tmp += rhs;
-			return tmp;
+			return tmp += rhs;
 		}
 		string& operator=(const string& str)
 		{
@@ -238,11 +251,20 @@ namespace ministl
 		}
 		string& assign(const char* s)
 		{
-			return assign(string(s));
+			clear();
+			if (s == nullptr) return *this;
+			size_t cnt = 0;
+			while (s[cnt] != '\0') cnt++;
+			start = data_allocator.allocate(cnt);
+			End = std::uninitialized_copy_n(s, cnt, start);
+			end_of_storage += cnt;
 		}
 		string& assign(size_type n, char c)
 		{
-			return assign(string(n, c));
+			clear();
+			if (n == 0) return *this;
+			start = data_allocator.allocate(n);
+			End = end_of_storage = std::uninitialized_fill_n(start, n, c);
 		}
 		string& insert(size_type pos, const string& rhs)
 		{
@@ -250,10 +272,10 @@ namespace ministl
 			size_type new_size = size() + rhs.size();
 			iterator new_start = data_allocator.allocate(new_size);
 			std::uninitialized_copy(start, start + pos, new_start);
-			std::uninitialized_copy(rhs.start, rhs.finish, new_start + pos);
-			std::uninitialized_copy(start + pos, finish, new_start + pos + rhs.size());
+			std::uninitialized_copy(rhs.start, rhs.End, new_start + pos);
+			std::uninitialized_copy(start + pos, End, new_start + pos + rhs.size());
 			start = new_start;
-			End = finish = new_size + new_start;
+			end_of_storage = End = new_size + new_start;
 			return *this;
 		}
 		string& insert(size_type pos, const char* s, size_type n)
@@ -271,14 +293,14 @@ namespace ministl
 				reallocate();
 			pos = start + index;
 			if (pos > end()) pos = end();
-			std::copy(pos, finish, pos + 1);
+			std::copy(pos, End, pos + 1);
 			(*pos) = val;
-			finish++;
+			End++;
 			return pos;
 		}
 		string& insert(size_type pos, size_type num, const value_type& val)
 		{
-			return insert(pos , string(num, val));
+			return insert(pos, string(num, val));
 		}
 		string& insert(iterator pos, size_type num, const value_type& val)
 		{
@@ -286,20 +308,20 @@ namespace ministl
 		}
 		string& erase(size_type pos, size_type n)
 		{
-			std::copy(pos + n + start, finish, start + pos);
-			finish = finish - n;
+			std::copy(pos + n + start, End, start + pos);
+			End = End - n;
 			return *this;
 		}
 		iterator erase(iterator pos)
 		{
-			std::copy(pos + 1, finish, pos);
-			finish--;
+			std::copy(pos + 1, End, pos);
+			End--;
 			return pos;
 		}
 		iterator erase(iterator first, iterator last)
 		{
-			std::copy(last, finish, first);
-			finish = finish - (last - first);
+			std::copy(last, End, first);
+			End = End - (last - first);
 			return first;
 		}
 		string& replace(size_t pos, size_t n, const string& str)
@@ -310,11 +332,13 @@ namespace ministl
 		}
 		string& replace(iterator i1, iterator i2, const string& str)
 		{
-			insert(erase(i1, i2) - start,str);
+			insert(erase(i1, i2) - start, str);
 			return *this;
 		}
 		const char* c_str() const
 		{
+			if (empty()) return "";
+			*end_of_storage = '\0';
 			return start;
 		}
 		bool operator == (const string& rhs)
@@ -323,7 +347,7 @@ namespace ministl
 				return false;
 			else
 			{
-				for (auto i = start, j = rhs.start; i != finish; i++, j++)
+				for (auto i = start, j = rhs.start; i != End; i++, j++)
 				{
 					if ((*i) != (*j))
 						return false;
@@ -334,7 +358,7 @@ namespace ministl
 		int compare(const string& rhs)
 		{
 			iterator i = start, j = rhs.start;
-			while (i != finish && j!=rhs.finish)
+			while (i != End && j != rhs.End)
 			{
 				if ((*i) > (*j))
 					return 1;
@@ -343,9 +367,9 @@ namespace ministl
 				else
 					i++, j++;
 			}
-			if (i == finish&&j == rhs.finish)
+			if (i == End&&j == rhs.End)
 				return 0;
-			else if (i == finish)
+			else if (i == End)
 				return -1;
 			else
 				return 1;
@@ -364,12 +388,12 @@ namespace ministl
 		{
 			if (size() - pos < str.size())
 				return (size_type)(-1);
-			for (auto it = start + pos; it != finish; it++)
+			for (auto it = start + pos; it != End; it++)
 			{
 				auto i = it, j = str.start;
-				while (j<str.finish && *i == *j)
+				while (j<str.End && *i == *j)
 					i++, j++;
-				if (j == str.finish )
+				if (j == str.End)
 					return it - start;
 			}
 			return (size_type)(-1);
@@ -388,7 +412,7 @@ namespace ministl
 				return size_type(-1);
 			else
 			{
-				for (auto it = start; it != finish; it++)
+				for (auto it = start; it != End; it++)
 					if (*it == c)
 						return it - start;
 				return size_type(-1);
@@ -401,7 +425,7 @@ namespace ministl
 		size_t rfind(string& rhs, size_t pos = 0)
 		{
 			if (pos == 0) pos = size();
-			for (auto it = std::min(start + pos, finish - 1); it != start -1 ; it--)
+			for (auto it = std::min(start + pos, End - 1); it != start - 1; it--)
 			{
 				size_t i;
 				for (i = 0; i < rhs.size();)
@@ -417,7 +441,7 @@ namespace ministl
 		size_t rfind(const char& c, size_t pos = 0)
 		{
 			if (pos == 0) pos = size();
-			for (auto it = std::min(finish - 1,start+pos); it != start; it--)
+			for (auto it = std::min(End - 1, start + pos); it != start; it--)
 			{
 				if (*it == c)
 					return it - start;
@@ -430,23 +454,23 @@ namespace ministl
 		}
 		size_t find_first_of(const string& rhs, size_t pos = 0)
 		{
-			for (auto it = start + pos; it != finish; it++)
+			for (auto it = start + pos; it != End; it++)
 			{
 				auto i = rhs.start;
-				while (i != rhs.finish)
+				while (i != rhs.End)
 				{
 					if (*i == *it)
 						break;
 					i++;
 				}
-				if (i != rhs.finish)
+				if (i != rhs.End)
 					return it - start;
 			}
 			return (size_t)-1;
 		}
 		size_t find_first_of(const char& c, size_t pos = 0)
 		{
-			for (auto it = start + pos; it != finish; it++)
+			for (auto it = start + pos; it != End; it++)
 			{
 				if (*it == c)
 					return it - start;
@@ -481,7 +505,7 @@ namespace ministl
 			for (auto it = start + pos; it != start - 1; it--)
 			{
 				size_t i = 0;
-				while (rhs.start + i != rhs.finish)
+				while (rhs.start + i != rhs.End)
 					if (*it == *(start + i))
 						break;
 					else
@@ -492,7 +516,7 @@ namespace ministl
 		}
 		size_t find_first_not_of(const string& rhs)
 		{
-			for (auto it = start; it != finish; it++)
+			for (auto it = start; it != End; it++)
 			{
 				size_t i = 0;
 				while (i < rhs.size())
@@ -504,7 +528,7 @@ namespace ministl
 			}
 			return size_t(-1);
 		}
-		size_t find_last_not_of(const string& rhs,size_t pos)
+		size_t find_last_not_of(const string& rhs, size_t pos)
 		{
 			for (auto it = start + pos; it != start - 1; it--)
 			{
@@ -539,7 +563,11 @@ namespace ministl
 			return compare(rhs) <= 0;
 		}
 	};
-
+	std::ostream& operator<<(std::ostream& os, const ministl::string& rhs)
+	{
+		os << rhs.c_str();
+		return os;
+	}
 }
 
 #endif
