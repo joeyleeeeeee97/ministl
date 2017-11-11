@@ -3,6 +3,7 @@
 #define _TREE_H
 #include "functional.h"
 #include"allocator.h"
+#include "utility.h"
 namespace ministl
 {
 	//Binary search Tree
@@ -141,16 +142,18 @@ namespace ministl
 			p->parent = pre;
 			return p;
 		}
-		node_ptr insert_aux(node_ptr p, node_ptr pre,const value_type& val)
+		node_ptr insert_aux(node_ptr p, node_ptr pre,const value_type& val, node_ptr& ret)
 		{
 			if (!p)
 			{
-				return new_node(val, pre);
+				return ret = new_node(val, pre);
 			}
 			if (p->data > val)
-				p->left = insert_aux(p->left, p, val);
+				p->left = insert_aux(p->left, p, val, ret);
 			else if (p->data < val)
-				p->right = insert_aux(p->right, p, val);
+				p->right = insert_aux(p->right, p, val, ret);
+			else
+				ret = p;
 			return p;
 		}
 		iterator find_aux(node_ptr p, const value_type& val)
@@ -285,11 +288,7 @@ namespace ministl
 		}
 		size_type size()
 		{
-			if (empty()) return 0;
-			size_t cnt = 0;
-			for (auto it = begin(); it != end(); it++)
-				cnt++;
-			return cnt;
+			return data_cnt;
 		}
 		iterator begin()
 		{
@@ -321,11 +320,12 @@ namespace ministl
 		{
 			return node;
 		}
-		iterator insert(const value_type& val)
+		pair<iterator,bool> insert(const value_type& val)
 		{
-			node = insert_aux(node, NULL, val);
-			//return *this;
-			return iterator(node);
+			node_ptr ret = nullptr;
+			node = insert_aux(node, NULL, val, ret);
+			data_cnt++;
+			return make_pair<iterator, bool>(ret , ret == nullptr);
 		}
 		iterator find(const value_type& key)
 		{
@@ -342,14 +342,17 @@ namespace ministl
 		void erase(iterator pos)
 		{
 			erase_aux(pos.p.node);
+			data_cnt--;
 		}
 		void erase(const value_type& x)
 		{
 			erase_val_aux(node, x);
+			data_cnt--;
 		}
 		void clear()
 		{
 			del(node);
+			data_cnt = 0;
 		}
 	};
 	//Trie Tree

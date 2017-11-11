@@ -3,11 +3,11 @@
 #define _VECTOR_H
 #include<memory>
 #include"construct.h"
-#include<algorithm>
 #include"allocator.h"
 namespace ministl
 {
-	template<class T, class Alloc = std::allocator<T> >
+	//template<class T> void swap(vector<T>& lhs, vector<T>& rhs);
+	template<class T, class Alloc = ministl::allocator<T> >
 	class vector
 	{
 	public:
@@ -22,12 +22,11 @@ namespace ministl
 		Data_allocator data_allocator;
 		void DestroyAndDeallocateAll()
 		{
-		//	Print();
+			//	Print();
 			if (capacity() == 0) return;
 			for (iterator it = start; it != End; it++)
 				destroy(it);
 			data_allocator.deallocate(start, end_of_storage - start);
-			cout << "ok" << endl;
 		}
 	protected:
 		iterator start, End, end_of_storage;
@@ -51,8 +50,8 @@ namespace ministl
 		//for Debug
 		void Print()
 		{
-		/*	cout << "size() is " << size() << endl;
-			cout << " capacity() is " << capacity() << endl;*/
+			/*	cout << "size() is " << size() << endl;
+				cout << " capacity() is " << capacity() << endl;*/
 			for (iterator it = start; it != End; it++)
 				cout << *it << endl;
 		}
@@ -83,11 +82,19 @@ namespace ministl
 			end_of_storage = rhs.end_of_storage;
 			rhs.start = rhs.end_of_storage = rhs.End = nullptr;//右值引用
 		}
+		vector(std::initializer_list<T> l)
+		{
+			start = data_allocator.allocate(l.size());
+			End = end_of_storage = std::uninitialized_copy(l.begin(), l.end(), start);
+		}
 		//Destructor
 		~vector() { DestroyAndDeallocateAll(); }
 		//Iterator
-		iterator begin(){ return start;	}
-		iterator end(){	return End;}
+		//为什么这个不能 vector<int>::iterator = v.end()--;
+		const iterator begin() const { return start; }
+		const iterator end() const { return End; }
+		iterator begin() { return start; }
+		iterator end() { return End; }
 		//Elemnt access
 		value_type& operator [](size_type n)
 		{
@@ -151,7 +158,7 @@ namespace ministl
 		void reserve(size_type n)
 		{
 			if (n <= capacity()) return;
-			reallocate(n);
+				reallocate(n);
 		}
 		bool empty()
 		{
@@ -179,7 +186,7 @@ namespace ministl
 		{
 			DestroyAndDeallocateAll();
 			start = data_allocator.allocate(last - first);
-			End = end_of_storage = uninitialized_copy(first, last, start);
+			End = end_of_storage = std::uninitialized_copy(first, last, start);
 		}
 		void assign(size_type n, const value_type &v)
 		{
@@ -235,6 +242,7 @@ namespace ministl
 		template<class InputIterator>
 		void insert(iterator pos, InputIterator first, InputIterator last)//������ֻд ǰ�������
 		{
+
 			size_type add_num = last - first, index = pos - start, after_num = End - pos;
 			if (add_num + size() > capacity())
 				reserve(add_num + size());
@@ -310,10 +318,17 @@ namespace ministl
 		{
 			if (this != &rhs)
 			{
-				assign(rhs.start, rhs.End);
+				assign(rhs.begin(), rhs.end());
+				/*vector<T, Alloc> tmp(rhs.begin(), rhs.end());
+				ministl::swap(*this, rhs);*/
 			}
 		}
 	};
-
+	
+	template<class T>
+	void swap(vector<T>& a, vector<T>& b)
+	{
+		a.swap(b);
+	}
 }
 #endif

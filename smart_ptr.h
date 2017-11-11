@@ -19,7 +19,7 @@ namespace ministl
 		}
 		~shared_ptr_node()
 		{
-			
+
 		}
 		void increment()
 		{
@@ -37,7 +37,10 @@ namespace ministl
 				}
 			}
 		}
-
+		T* get_ptr()
+		{
+			return ptr;
+		}
 		size_t count()
 		{
 			return cnt;
@@ -62,10 +65,14 @@ namespace ministl
 		}
 		shared_ptr(const self& x)
 		{
-			if (ptr != nullptr)
-				ptr->decrement();
-			x.ptr->increment();
-			ptr = x.ptr;
+			if (this->ptr != x.ptr)
+			{
+				if (ptr != nullptr)
+					ptr->decrement();
+				if (x.ptr != nullptr)
+					x.ptr->increment();
+				ptr = x.ptr;
+			}
 		}
 		explicit shared_ptr(T* data_ptr)
 		{
@@ -73,7 +80,18 @@ namespace ministl
 		}
 		self& operator= (const self& x) noexcept
 		{
-			shared_ptr(x);
+			if (this->ptr == x.ptr)
+				return *this;
+			if (ptr != nullptr)
+				ptr->decrement();
+			if (x.ptr != nullptr)
+				x.ptr->increment();
+			ptr = x.ptr;
+			return *this;
+		}
+		T& operator*()
+		{
+			return *(ptr->get_ptr());
 		}
 		size_t use_count()
 		{
@@ -90,11 +108,11 @@ namespace ministl
 		void reset() noexcept
 		{
 			ptr->decrement();
-			shared_ptr();
+			ptr = new node();
 		}
 		template <class U> void reset(U* p)
 		{
-			reset();
+			ptr->decrement();
 			ptr = new shared_ptr_node<U>(p);
 		}
 		T* get() noexcept
@@ -104,9 +122,9 @@ namespace ministl
 		/*template <class T, class... Args>
 		self make_shared(Args&&... args)
 		{
-			if (ptr != nullptr)
-				ptr->decrement();
-			ptr = new shared_ptr_node(args);
+		if (ptr != nullptr)
+		ptr->decrement();
+		ptr = new shared_ptr_node(args);
 		}*/
 		~shared_ptr()
 		{
@@ -116,6 +134,44 @@ namespace ministl
 				ptr = nullptr;
 			}
 		}
+	};
+
+
+	template<class T>
+	class unique_ptr
+	{
+	public:
+		unique_ptr() :data(nullptr) {}
+		unique_ptr(T* _data) :data(_data) {}
+		T* release()
+		{
+			T* ret = data;
+			data = nullptr;
+			return ret;
+		}
+		void reset()
+		{
+			delete data;
+			data = nullptr;
+		}
+		void reset(T* _data)
+		{
+			delete data;
+			data = _data;
+		}
+		void operator =(const unique_ptr<T>& rhs)
+		{
+			if (rhs.data != nullptr)
+				reset(rhs.release());
+			else
+				reset();
+		}
+		T& operator*()
+		{
+			return *data;
+		}
+	private:
+		T* data;
 	};
 }
 

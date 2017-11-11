@@ -18,16 +18,12 @@ namespace ministl
 		}
 		map_pair(const pair<K, T>& rhs)
 		{
-			fist = rhs.first;
+			first = rhs.first;
 			second = rhs.second;
 		}
 		map_pair(const K& key, const T& val)
 		{
 			first = key, second = val;
-		}
-		map_pair(const K& key)
-		{
-			first = key, second = T();
 		}
 		bool operator==(const self& rhs) const
 		{
@@ -57,9 +53,9 @@ namespace ministl
 	private:
 		typedef map_pair<K, T> key_value;
 		typedef size_t size_type;
-		typedef BStree_iterator<key_value> iterator;
 		BStree<key_value> sequence;
 	public:
+		typedef BStree_iterator<key_value> iterator;
 		map() :sequence() {}
 		iterator begin()
 		{
@@ -77,44 +73,45 @@ namespace ministl
 		{
 			return sequence.size();
 		}
-		iterator find(const key_value& x)
+		iterator find(const K& x)
 		{
-			return sequence.find(x);
+			return sequence.find(map_pair<K, T>(x, T()));
 		}
-		size_type count(const key_value& x)
+		size_type count(const K& x)
 		{
-			if (sequence.find(x).p.node == NULL)
+			if (sequence.find(map_pair<K, T>(x, T())).p.node == NULL)
 				return 0;
 			else
 				return 1;
 		}
-		iterator insert(const key_value& key)
+		auto insert(const key_value& key)
 		{
-			return sequence.insert(key);
+			return sequence.insert(map_pair<K,T>(key,T()));
 		}
-		void erase(const key_value& key)
+		template <class InputIterator>
+		void insert(InputIterator first, InputIterator last)
 		{
-			return sequence.erase(key);
+			for (auto it = first; it != last; it++)
+				insert(*first);
 		}
-		iterator upper_bound(const key_value& key)
+		void erase(const K& key)
 		{
-			return sequence.upper_bound(key);
+			return sequence.erase(map_pair<K, T>(key, T()));
 		}
-		iterator lower_bound(const key_value& key)
+		iterator upper_bound(const K& key)
 		{
-			return sequence.lower_bound(key);
+			return sequence.upper_bound(map_pair<K, T>(key, T()));
+		}
+		iterator lower_bound(const K& key)
+		{
+			return sequence.lower_bound(map_pair<K, T>(key, T()));
 		}
 
-		auto& operator [](const key_value& x)
+
+		T& operator [](const K& x)
 		{
-			iterator it = find(x);
-			if (it.p.node == NULL)
-			{
-				insert(x);
-				return sequence.find(x).p.node->data.second;
-			}
-			else
-				return it.p.node->data.second;
+			pair<iterator,bool> res = sequence.insert(map_pair<K,T>(x,T()));
+			return (*res.first).second;
 		}
 
 	};

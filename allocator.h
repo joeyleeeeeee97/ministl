@@ -8,87 +8,68 @@
 #include<cstdlib>
 #include"construct.h"
 #include"alloc.h"
+
 namespace ministl
 {
-	template<class T,class Alloc>
-	class simple_alloc
-	{
+	template<class T>
+	class allocator {
 	public:
-		static T* allocate(size_t n)
-		{
-			return n == 0 ? 0 : (T*)Alloc::allocate(n * sizeof(T));
-		}
-		static T* allocate(void)
-		{
-			return (T*)Alloc::allocate(sizeof(T));
-		}
-		static void deallocate(T *p, size_t n)
-		{
-			if (n != 0)
-				Alloc::deaallocate(p, n * sizeof(T));
-		}
-		static void deallocate(T* p)
-		{
-			Alloc::deallocate(p, sizeof(T));
-		}
+		typedef T			value_type;
+		typedef T*			pointer;
+		typedef const T*	const_pointer;
+		typedef T&			reference;
+		typedef const T&	const_reference;
+		typedef size_t		size_type;
+		typedef ptrdiff_t	difference_type;
+	public:
+		static T *allocate();
+		static T *allocate(size_t n);
+		static void deallocate(T *ptr);
+		static void deallocate(T *ptr, size_t n);
+
+		static void construct(T *ptr);
+		static void construct(T *ptr, const T& value);
+		static void destroy(T *ptr);
+		static void destroy(T *first, T *last);
 	};
 
-
 	template<class T>
-	inline T* _allocate(size_t n, T*)
-	{
-		return static_cast<T*>(alloc::allocate(n));
+	T *allocator<T>::allocate() {
+		return static_cast<T *>(alloc::allocate(sizeof(T)));
+	}
+	template<class T>
+	T *allocator<T>::allocate(size_t n) {
+		if (n == 0) return 0;
+		return static_cast<T *>(alloc::allocate(sizeof(T) * n));
+	}
+	template<class T>
+	void allocator<T>::deallocate(T *ptr) {
+		alloc::deallocate(static_cast<void *>(ptr), sizeof(T));
+	}
+	template<class T>
+	void allocator<T>::deallocate(T *ptr, size_t n) {
+		if (n == 0) return;
+		alloc::deallocate(static_cast<void *>(ptr), sizeof(T)* n);
 	}
 
 	template<class T>
-	inline void _deallocate(T* buffer)
-	{
-		alloc::deallocate(static_cast<T*>(buffer), sizeof(T));
+	void allocator<T>::construct(T *ptr) {
+		new(ptr)T();
 	}
-
-
 	template<class T>
-	class allocator
-	{
-	public:
-		typedef T value_type;
-		typedef T* pointer;
-		typedef const T* const_pointer;
-		typedef T& reference;
-		typedef const T& const_reference;
-		typedef size_t size_type;
-		typedef ptrdiff_t difference_type;
-
-		template<class U>
-		struct rebind
-		{
-			typedef allocator<U> other;
-		};
-
-		pointer allocate(size_type n,const void* hint = 0)
-		{
-			return _allocate((difference_type)n, pointer(0));
+	void allocator<T>::construct(T *ptr, const T& value) {
+		new(ptr)T(value);
+	}
+	template<class T>
+	void allocator<T>::destroy(T *ptr) {
+		ptr->~T();
+	}
+	template<class T>
+	void allocator<T>::destroy(T *first, T *last) {
+		for (; first != last; ++first) {
+			first->~T();
 		}
-
-		void deallocate(pointer p, size_type n)
-		{
-			_deallocate(p);
-		}
-
-		pointer address(reference x)
-		{
-			return (pointer)&x;
-		}
-
-		const_pointer const_address(const reference x)
-		{
-			return (const_pointer)&x;
-		}
-		
-		size_type max_size()const
-		{
-			return size_type(UINT_MAX / sizeof(T));
-		}
-	};
+	}
 }
+
 #endif
