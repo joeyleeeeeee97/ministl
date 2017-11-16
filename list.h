@@ -6,6 +6,7 @@
 #include"allocator.h"
 namespace ministl
 {
+
 	template <class T>
 	struct list_node
 	{
@@ -144,10 +145,13 @@ namespace ministl
 		//Destructor
 		~list()
 		{
-			for (iterator it = begin(); it != end(); )
+			if (!empty())
 			{
-				data_allocator.destroy(&it.ptr->data);
-				it++;
+				for (iterator it = begin(); it != end(); )
+				{
+					data_allocator.destroy(&it.ptr->data);
+					it++;
+				}
 			}
 		}
 		//Iterators

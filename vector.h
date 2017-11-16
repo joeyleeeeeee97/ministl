@@ -6,6 +6,7 @@
 #include"allocator.h"
 namespace ministl
 {
+
 	//template<class T> void swap(vector<T>& lhs, vector<T>& rhs);
 	template<class T, class Alloc = ministl::allocator<T> >
 	class vector
@@ -40,7 +41,7 @@ namespace ministl
 				std::cerr << "out of memory" << std::endl;
 				std::exit(1);
 			}
-			iterator new_End = uninitialized_copy(start, End, new_start);
+			iterator new_End = std::uninitialized_copy(start, End, new_start);
 			DestroyAndDeallocateAll();
 			start = new_start;
 			End = new_End;
@@ -53,7 +54,7 @@ namespace ministl
 			/*	cout << "size() is " << size() << endl;
 				cout << " capacity() is " << capacity() << endl;*/
 			for (iterator it = start; it != End; it++)
-				cout << *it << endl;
+				std::cout << *it << std::endl;
 		}
 		//Constructor
 		vector()
@@ -69,7 +70,7 @@ namespace ministl
 		vector(iterator first, iterator last)
 		{
 			start = data_allocator.allocate(last - first);
-			End = end_of_storage = uninitialized_copy(first, last, start);
+			End = end_of_storage = std::uninitialized_copy(first, last, start);
 		}
 		vector(const vector<T, Alloc> &rhs)
 		{
@@ -77,10 +78,12 @@ namespace ministl
 		}
 		vector(vector<T, Alloc> &&rhs)
 		{
-			start = rhs.start;
-			End = rhs.End;
-			end_of_storage = rhs.end_of_storage;
-			rhs.start = rhs.end_of_storage = rhs.End = nullptr;//右值引用
+			if (this != &rhs)
+			{
+				DestroyAndDeallocateAll();
+				start = rhs.start, End = rhs.End, end_of_storage = rhs.end_of_storage;
+				rhs.start = rhs.end_of_storage = rhs.End = nullptr;//可析构的状态
+			}
 		}
 		vector(std::initializer_list<T> l)
 		{
@@ -125,6 +128,10 @@ namespace ministl
 		}
 		//Capacity
 		size_type size()
+		{
+			return End - start;
+		}
+		size_type size() const
 		{
 			return End - start;
 		}

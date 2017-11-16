@@ -1,6 +1,7 @@
 #pragma once
 #ifndef _UTILITY_H
 #define _UTILITY_H
+#include"xhash.h"
 namespace ministl
 {
 	template<typename T1,typename T2>
@@ -46,6 +47,58 @@ namespace ministl
 	pair<T1, T2> make_pair(T1 x, T2 y)
 	{
 		return pair<T1, T2>(x, y);
+	}
+
+	//在一个pair的子类map_pair中重新定义 运算符 
+	template<typename K, typename T>
+	struct map_pair
+	{
+		typedef map_pair<K, T> self;
+		K first;
+		T second;
+		operator pair<K, T>()
+		{
+			return ministl::make_pair<K, T>(first, second);
+		}
+		map_pair(const pair<K, T>& rhs)
+		{
+			first = rhs.first;
+			second = rhs.second;
+		}
+		map_pair(const K& key, const T& val)
+		{
+			first = key, second = val;
+		}
+		bool operator==(const self& rhs) const
+		{
+			return first == rhs.first;
+		}
+		bool operator!=(const self& rhs) const
+		{
+			return !(*this == rhs);
+		}
+		bool operator<(const self& rhs) const
+		{
+			return first < rhs.first;
+		}
+		bool operator>(const self& rhs) const
+		{
+			return first > rhs.first;
+		}
+		bool operator>=(const self& rhs) const
+		{
+			return !(first < rhs.first);
+		}
+		bool operator<=(const self& rhs) const
+		{
+			return !(first > rhs.first);
+		}
+	};
+
+	template<typename K,typename T>
+	size_t hash_val(const map_pair<K, T>& rhs)
+	{
+		return hash_val(rhs.first);
 	}
 }
 

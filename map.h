@@ -5,47 +5,6 @@
 #include "utility.h"
 namespace ministl
 {
-	//在一个pair的子类map_pair中重新定义 运算符 
-	template<typename K,typename T>
-	struct map_pair
-	{
-		typedef map_pair<K, T> self;
-		K first;
-		T second;
-		operator pair<K, T>()
-		{
-			return ministl::make_pair<K,T>(first,second);
-		}
-		map_pair(const pair<K, T>& rhs)
-		{
-			first = rhs.first;
-			second = rhs.second;
-		}
-		map_pair(const K& key, const T& val)
-		{
-			first = key, second = val;
-		}
-		bool operator==(const self& rhs) const
-		{
-			return first == rhs.first;
-		}
-		bool operator<(const self& rhs) const
-		{
-			return first < rhs.first;
-		}
-		bool operator>(const self& rhs) const
-		{
-			return first > rhs.first;
-		}
-		bool operator>=(const self& rhs) const
-		{
-			return !(first < rhs.first);
-		}
-		bool operator<=(const self& rhs) const
-		{
-			return !(first > rhs.first);
-		}
-	};
 
 	template<typename K, typename T>
 	class map

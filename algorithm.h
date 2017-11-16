@@ -1,7 +1,7 @@
 #pragma once
 #ifndef _ALGORITHM_H
 #define _ALGORITHM_H
-#include<utility>
+#include "utility.h"
 
 namespace ministl
 {
@@ -234,7 +234,183 @@ namespace ministl
 	}
 
 
+	template< class ForwardIterator1,class ForwardIterator2 >
+	void iter_swap(ForwardIterator1 a, ForwardIterator2 b)
+	{
+		swap(*a, *b);
+	}
 
+	template < class InputIterator, class OutputIterator, class UnaryOperator >
+	OutputIterator transform(InputIterator first1, InputIterator last1,
+		OutputIterator result, UnaryOperator op)
+	{
+		for (; first1 != last1; first1++, result++)
+		{
+			*result = op(*first1);
+		}
+		return result;
+	}
+
+	template < class InputIterator1, class InputIterator2,class OutputIterator, class BinaryOperator >
+	OutputIterator transform(InputIterator1 first1, InputIterator1 last1,InputIterator2 first2, OutputIterator result,BinaryOperator binary_op)
+	{
+		for (; first1 != last1; first1++, first2++, result++)
+		{
+			*result = binary_op(*first1, *first2);
+		}
+		return result;
+	}
+
+	template < class ForwardIterator, class T >
+	void replace(ForwardIterator first, ForwardIterator last, const T& old_value, const T& new_value)
+	{
+		for (; first != last; first++)
+		{
+			if (*first == old_value) *first = new_value;
+		}
+	}
+
+	template < class ForwardIterator, class Predicate, class T >
+	void replace_if(ForwardIterator first, ForwardIterator last, Predicate pred, const T& new_value)
+	{
+		for (; first != last; first++)
+		{
+			if (pred(*first)) *first = new_value;
+		}
+	}
+
+	template < class InputIterator, class OutputIterator, class T >
+	OutputIterator replace_copy(InputIterator first, InputIterator last, OutputIterator result, const T& old_val, const T& new_val)
+	{
+		for (; first != last; first++, result++)
+		{
+			*result = *first == old_val ? new_val : *first;
+		}
+		return result;
+	}
+
+	template< class InputIterator, class OutputIterator, class Predicate, class T>
+	OutputIterator reaplace_copy_if(InputIterator first, InputIterator last, OutputIterator result, Predicate pred, const T& new_val)
+	{
+		for (; first != last; first++, result++)
+		{
+			*result = pred(*first) ? new_val : *first;
+		}
+		return result;
+	}
+
+
+	template< class ForwardIterator, class T>
+	void fill(ForwardIterator first, ForwardIterator last, const T& val)
+	{
+		for (; first != last; first++)
+		{
+			*first = val;
+		}
+	}
+
+	template < class OutputIterator, class Size, class T >
+	void fill_n(OutputIterator first, Size n, const T& value)
+	{
+		while (n-- > 0) *(first++) = value;
+	}
+
+	template <class ForwardIterator, class Generator>
+	void generate(ForwardIterator first, ForwardIterator last, Generator gen)
+	{
+		for (; first != last; first++)
+			*first = gen();
+	}
+
+	template <class OutputIterator, class Size, class Generator>
+	void generate_n(OutputIterator first, Size n, Generator gen)
+	{
+		while (n > 0) *first++ = gen();
+	}
+
+	template<class ForwardIterator, class T>
+	ForwardIterator remove(ForwardIterator first, ForwardIterator last, const T& val)
+	{
+		ForwardIterator result = first;
+		for (; first != last; first++)
+		{
+			if (*first != val)
+				*result++ = *first;
+		}
+		return result;
+	}
+
+	template < class ForwardIterator, class Predicate >
+	ForwardIterator remove_if(ForwardIterator first, ForwardIterator last, Predicate pred)
+	{
+		ForwardIterator result = first;
+		for (; first != last; first++)
+		{
+			if (!pred(*first))
+				*result++ = *first;
+		}
+		return result;
+	}
+
+	template < class InputIterator, class OutputIterator, class T>
+	OutputIterator remove_copy(InputIterator first, InputIterator last, OutputIterator result, const T& value)
+	{
+		for (; first != last; ++first)
+			if (!(*first == value)) *result++ = *first;
+		return result;
+	}
+
+	//并不是所有迭代器都支持随机存取....
+	/*template< class ForwardIterator>
+	ForwardIterator unique(ForwardIterator first, ForwardIterator last)
+	{
+		if (first == last) return first;
+		ForwardIterator result = first++;
+		for (; first != last; first++)
+		{
+			if (*first != *(first - 1)) *result++ = *first;
+		}
+		return result;
+	}*/
+	template <class ForwardIterator>
+	ForwardIterator unique(ForwardIterator first, ForwardIterator last)
+	{
+		ForwardIterator result = first;
+		while (++first != last)
+		{
+			if (!(*result == *first))  // or: if (!pred(*result,*first)) for the pred version
+				*(++result) = *first;
+		}
+		return ++result;
+	}
+
+
+	template<class ForwardIterator>
+	void rotate(ForwardIterator first, ForwardIterator middle, ForwardIterator last)
+	{
+		ForwardIterator next = tmp;
+		while (first != next)
+		{
+			swap(*first++, *next++);
+			if (next == last) next = middle;
+			else if (first == middle) middle = next;
+		}
+	}
+
+	template<class BidirectionalIterator, class Predicate>
+	BidirectionalIterator partition(BidirectionalIterator first, BidirectionalIterator last, Predicate pred)
+	{
+		while (1)
+		{
+			while (first != last && pred(*first)) first++;
+			if (first == last--) break;
+			while (first != last && !pred(*last)) last--;
+			if (first == last) break;
+			swap(*first, *last);
+		}
+
+		return first;
+	}
 }
 
 

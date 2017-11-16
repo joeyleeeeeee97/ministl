@@ -2,10 +2,13 @@
 #ifndef _STRING_H
 #define _STRING_H
 #include"allocator.h"
+#include"xhash.h"
+#include<algorithm>
 #include <ostream>
 
 namespace ministl
 {
+
 	class string
 	{
 	public:
@@ -17,9 +20,7 @@ namespace ministl
 		std::allocator<char> data_allocator;
 		void DeallocateAndDestory()
 		{
-			for (iterator it = start; it != end_of_storage; it++)
-				data_allocator.destroy(it);
-			data_allocator.deallocate(start, End - start);
+			data_allocator.deallocate(start, end_of_storage - start);
 		}
 		//重新构造元素 
 		void reallocate(size_t new_size = 0)
@@ -28,7 +29,7 @@ namespace ministl
 			if (new_size == 0)
 				new_size = size() ? 2 * size() : 1;
 			char* new_start = data_allocator.allocate(new_size);
-			std::uninitialized_copy(start, start + size(), new_start);
+			std::copy(start, start + size(), new_start);
 			DeallocateAndDestory();
 			start = new_start;
 			End = new_start + old_size;
@@ -96,7 +97,21 @@ namespace ministl
 			std::uninitialized_copy_n(s, n, start);
 			End = end_of_storage = start + n;
 		}
+		~string()
+		{
+			DeallocateAndDestory();
+		}
 		//Iterator
+		const iterator begin() const
+		{
+			return start;
+		}
+
+		const iterator end() const
+		{
+			return End;
+		}
+
 		iterator begin()
 		{
 			return start;
@@ -196,7 +211,7 @@ namespace ministl
 		{
 			if (rhs.empty()) return;
 			if (capacity()<size() + rhs.size()) reallocate(size() + rhs.size());
-			std::uninitialized_copy(rhs.start, rhs.end_of_storage, End);
+			std::copy(rhs.start, rhs.end_of_storage, End);
 			End += rhs.size();
 		}
 		void append(const char* s)
@@ -271,9 +286,9 @@ namespace ministl
 			pos = std::min(size(), pos);
 			size_type new_size = size() + rhs.size();
 			iterator new_start = data_allocator.allocate(new_size);
-			std::uninitialized_copy(start, start + pos, new_start);
-			std::uninitialized_copy(rhs.start, rhs.End, new_start + pos);
-			std::uninitialized_copy(start + pos, End, new_start + pos + rhs.size());
+			std::copy(start, start + pos, new_start);
+			std::copy(rhs.start, rhs.End, new_start + pos);
+			std::copy(start + pos, End, new_start + pos + rhs.size());
 			start = new_start;
 			end_of_storage = End = new_size + new_start;
 			return *this;
@@ -338,8 +353,10 @@ namespace ministl
 		const char* c_str() const
 		{
 			if (empty()) return "";
-			*end_of_storage = '\0';
-			return start;
+			char* ret = new char[End - start + 1];
+			std::uninitialized_copy(start, End, ret);
+			ret[End - start] = '\0';
+			return ret;
 		}
 		bool operator == (const string& rhs)
 		{
@@ -563,11 +580,25 @@ namespace ministl
 			return compare(rhs) <= 0;
 		}
 	};
-	std::ostream& operator<<(std::ostream& os, const ministl::string& rhs)
+	std::ostream& operator<<(std::ostream& os, const ministl::string& rhs) 
 	{
 		os << rhs.c_str();
 		return os;
 	}
+
+	size_t hash_value(const string& val)
+	{
+		const size_t _FNV_offset_basis = 2166136261U;
+		const size_t _FNV_prime = 16777619U;
+		size_t ans = _FNV_offset_basis;
+		for (auto it = val.begin(); it != val.end(); it++)
+		{
+			ans ^= *it;
+			ans *= _FNV_prime;
+		}
+		return ans;
+	}
+
 }
 
 #endif

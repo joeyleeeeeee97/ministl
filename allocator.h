@@ -1,3 +1,4 @@
+#pragma once
 #ifndef _ALLOCATOR_H
 #define _ALLOCATOR_H
 
@@ -8,7 +9,6 @@
 #include<cstdlib>
 #include"construct.h"
 #include"alloc.h"
-
 namespace ministl
 {
 	template<class T>
