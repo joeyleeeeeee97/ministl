@@ -4,6 +4,7 @@
 #include "functional.h"
 #include"allocator.h"
 #include "utility.h"
+#include "iterator.h"
 namespace ministl
 {
 	//Binary search Tree
@@ -17,7 +18,7 @@ namespace ministl
 		struct BSnode* right;
 	};
 	template<typename T>
-	class BStree_base_iterator
+	class BStree_base_iterator : public bidirectional_iterator<T>
 	{
 	public:
 		typedef BSnode<T>* ptr;

@@ -4,6 +4,7 @@
 #include"vector.h"
 #include"list.h"
 #include"string.h"
+#include"utility.h"
 namespace ministl
 {
 	const size_t HASH_SEED = 0xdeadbeef;
@@ -40,6 +41,15 @@ namespace ministl
 		return hash_seq(val);
 	}
 	
+#ifdef  _UTILITY_H
+	template<typename K, typename T> inline
+		size_t hash_value(const map_pair<K, T>& rhs)
+	{
+		return hash_value(rhs.first);
+	}
+#endif // ! _UTILITY_H
+
+	
 
 
 	template<typename T>
@@ -50,6 +60,8 @@ namespace ministl
 			return hash_value(data) % bucket_size;
 		}
 	};
+
+
 
 }
 #endif

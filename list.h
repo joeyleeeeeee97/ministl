@@ -15,7 +15,7 @@ namespace ministl
 		T data;
 	};
 	template<class T>
-	struct list_iterator
+	struct list_iterator : public bidirectional_iterator<T>
 	{
 		typedef T value_type;
 		typedef T& reference;

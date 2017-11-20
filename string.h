@@ -372,6 +372,20 @@ namespace ministl
 				return true;
 			}
 		}
+		bool operator == (const string& rhs) const
+		{
+			if (size() != rhs.size())
+				return false;
+			else
+			{
+				for (auto i = start, j = rhs.start; i != End; i++, j++)
+				{
+					if ((*i) != (*j))
+						return false;
+				}
+				return true;
+			}
+		}
 		int compare(const string& rhs)
 		{
 			iterator i = start, j = rhs.start;

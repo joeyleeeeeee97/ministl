@@ -11,6 +11,7 @@ namespace ministl
 		typedef T value_type;
 		typedef T& reference;
 		typedef size_t size_type;
+		typedef Sequence::iterator iterator;
 	protected:
 		Sequence c;
 		void check()
@@ -23,10 +24,23 @@ namespace ministl
 		}
 	public:
 		queue():c(){}
+		
+		iterator begin()
+		{
+			return c.begin();
+		}
+		
+		iterator end()
+		{
+			return c.end();
+		}
+
 		bool empty()
 		{
 			return c.empty();
 		}
+
+
 		size_type size()
 		{
 			return c.size();

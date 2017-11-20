@@ -143,13 +143,13 @@ Distance distance(InputIterator a, InputIterator b)
 
 template<class InputIterator, class Distance = ptrdiff_t>
 
-Distance distance(InputIterator a, InputIterator b, random_access_iterator_tag)
+Distance _distance(InputIterator a, InputIterator b, random_access_iterator_tag)
 {
 	return b - a;
 }
 
 template<class InputIterator, class Distance = ptrdiff_t>
-Distance distance(InputIterator a, InputIterator b, forward_iterator_tag)
+Distance _distance(InputIterator a, InputIterator b, forward_iterator_tag)
 {
 	Distance cnt = 0;
 	while (a < b)

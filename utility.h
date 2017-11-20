@@ -1,7 +1,6 @@
 #pragma once
 #ifndef _UTILITY_H
 #define _UTILITY_H
-#include"xhash.h"
 namespace ministl
 {
 	template<typename T1,typename T2>
@@ -95,11 +94,7 @@ namespace ministl
 		}
 	};
 
-	template<typename K,typename T>
-	size_t hash_val(const map_pair<K, T>& rhs)
-	{
-		return hash_val(rhs.first);
-	}
+	
 }
 
 #endif

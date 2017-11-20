@@ -3,6 +3,7 @@
 #ifndef _DEQUE_H
 #define _DEQUE_H
 #include<memory>
+#include"iterator.h"
 namespace ministl
 {
 	inline size_t _deque_buf_size(size_t n, size_t sz)
@@ -10,7 +11,7 @@ namespace ministl
 		return n != 0 ? n : (sz < 512 ? size_t(512 / sz) : size_t(1));
 	}
 	template<class T, size_t Bufsize = 0>
-	struct _deque_iterator
+	struct _deque_iterator :  public random_access_iterator<T>
 	{
 		typedef _deque_iterator<T> iterator;
 
@@ -193,8 +194,8 @@ namespace ministl
 			try
 			{
 				for (cur = start.node; cur < finish.node; cur++)
-					uninitialized_fill(*cur, *cur + buffer_size(), val);
-				uninitialized_fill(finish.first, finish.last, val);
+					std::uninitialized_fill(*cur, *cur + buffer_size(), val);
+				std::uninitialized_fill(finish.first, finish.last, val);
 			}
 			catch (...)
 			{
@@ -211,16 +212,16 @@ namespace ministl
 			{
 				new_start = map + (map_size - new_num_nodes) / 2 + (add_at_front ? nodes_to_add : 0);
 				if (new_start < start.node)
-					copy(start.node, finish.node + 1, new_start);
+					std::copy(start.node, finish.node + 1, new_start);
 				else
-					copy_backward(start.node, finish.node + 1, new_start + old_num_nodes);
+					std::copy_backward(start.node, finish.node + 1, new_start + old_num_nodes);
 			}
 			else
 			{
-				size_type new_map_size = map_size + max(map_size, nodes_to_add) + 2;
+				size_type new_map_size = map_size + std::max(map_size, nodes_to_add) + 2;
 				map_pointer new_map = map_allocator.allocate(new_map_size);
 				new_start = new_map + (new_map_size - new_num_nodes) / 2 + (add_at_front ? nodes_to_add : 0);
-				copy(start.node, finish.node + 1, new_start);
+				std::copy(start.node, finish.node + 1, new_start);
 				map = new_map;
 				map_size = new_map_size;
 			}

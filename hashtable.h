@@ -20,7 +20,7 @@ namespace ministl
 	};
 
 	template<typename T>
-	class hash_iterator
+	class hash_iterator : public bidirectional_iterator<T>
 	{
 	public:
 		hashtable<T>* hash_ptr;
@@ -170,10 +170,10 @@ namespace ministl
 			for (auto it = data[index].begin(); it != data[index].end(); it++)
 			{
 				if (*it == val)
-					return make_pair<iterator, bool >(iterator(this, &data[index], it), true);
+					return ministl::make_pair<iterator, bool >(iterator(this, &data[index], it), true);
 			}
 
-			return make_pair<iterator, bool >(end(), false);
+			return ministl::make_pair<iterator, bool >(end(), false);
 		}
 
 
@@ -420,6 +420,8 @@ namespace ministl
 
 	};
 
+	//Todo: map_pair的hashval
+	//模板特化无法匹配？
 	template<typename K , typename T, typename Hash = xhash<map_pair<K,T>> >
 	class unordered_map
 	{
@@ -427,14 +429,136 @@ namespace ministl
 		typedef K key_type;
 		typedef T value_type;
 		typedef Hash hash_type;
-		typedef vector<list<T>> table;
-		typedef hash_iterator<T> iterator;
-		typedef hashtable<T, Hash> seq;
+		typedef vector<list<map_pair<K,T>>> table;
+		typedef hash_iterator<map_pair<K,T>> iterator;
+		typedef hashtable<map_pair<K, T>, xhash<map_pair<K, T>> > seq;
 	private:
 		seq con;
 	public:
 		unordered_map() :con() {}
 		
+		iterator begin()
+		{
+			return con.begin();
+		}
+		iterator begin() const
+		{
+			return con.begin();
+		}
+
+		iterator end()
+		{
+			return con.end();
+		}
+		iterator end() const
+		{
+			return con.end();
+		}
+
+		value_type& operator[](const key_type& key)
+		{
+			map_pair<K, T> p(key, T());
+			auto tmp = con.find(p);
+			iterator it = tmp.first;
+			if (tmp.second == false)
+			{
+				it = con.insert_equal(p);
+			}
+			return (*it).second;
+
+		}
+
+		value_type& at(const key_type& key)
+		{
+			auto tmp = con.find(key);
+			if (tmp.second == false)
+			{
+				std::cerr << "unordered_map out of range \n";
+				std::exit(1);
+			}
+			return (*it).second;
+		}
+
+		const value_type& at(const key_type& key) const
+		{
+			auto tmp = con.find(key);
+			if (tmp.second == false)
+			{
+				std::cerr << "unordered_map out of range \n";
+				std::exit(1);
+			}
+			return (*it).second;
+		}
+
+		iterator find(const key_type& key)
+		{
+			return con.find(key).first;
+		}
+
+		pair<iterator, iterator>
+			equal_range(const key_type& k)
+		{
+			auto first = con.find(k).first;
+			if (first == con.end())
+				return make_pair<iterator, iterator>(first, first);
+			else
+			{
+				iterator last = ++first;
+				while (last != con.end() && (*last == *first))
+				{
+					last++;
+				}
+				return make_pair<iterator, iterator>(first, last);
+			}
+		}
+
+		size_t count(const key_type& k)
+		{
+			auto first = con.find(k).first;
+			if (first == con.end())
+				return 0;
+			else
+			{
+				iterator last = ++first;
+				size_t cnt = 1;
+				while (last != con.end() && (*last == *first))
+				{
+					last++, cnt++;
+				}
+				return cnt;
+			}
+		}
+
+		auto insert(const map_pair<K, T> p)
+		{
+			return con.insert_unique(p);
+		}
+
+		size_t erase(const value_type& key)
+		{
+			size_t num = count(key);
+			if (num)
+				con.erase_val(key);
+			return num;
+		}
+
+		iterator erase(const iterator it)
+		{
+			return con.erase_iter(it);
+		}
+
+		iterator erase(const iterator first, const iterator last)
+		{
+			iterator it = first;
+			for (; it != last;)
+				it = con.erase_iter(it);
+			return it;
+		}
+
+		void rehash(size_t n)
+		{
+			con.rehash(n);
+		}
 
 	};
 }
