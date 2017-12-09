@@ -45,6 +45,7 @@ namespace ministl
 		std::vector<int> temp1(10, 0);
 		ministl::vector<int> temp2(10, 0);
 
+		assert(Equal(temp1, temp2));
 		auto v1(temp1);
 		auto v2(temp2);
 		assert(Equal(v1, v2));
@@ -107,7 +108,7 @@ namespace ministl
 	void testCase10() {
 		ministl::vector<int> foo(3, 100);   // three ints with a value of 100
 		ministl::vector<int> bar(2, 200);   // five ints with a value of 200
-
+		//std::cout << foo[0] << ' ' << foo[1];
 		assert(Equal(foo, std::vector < int > { 100, 100, 100 }));
 		assert(Equal(bar, std::vector < int > {200, 200}));
 
@@ -137,8 +138,7 @@ namespace ministl
 		assert(Equal(v1, v2));
 
 		v1.insert(v1.end(), 1);
-		v2.insert(v2.end(), 1);
-		
+		v2.insert(v2.end(), 1); //是因为插入一个元素的操作写挫了！
 		assert(Equal(v1, v2));
 		
 		v1.insert(v1.begin() + v1.size() / 2, (size_t)10, 0);
@@ -216,7 +216,7 @@ namespace ministl
 			t.push_back(TestItem());
 			t.insert(t.begin()+1 ,2500, TestItem());
 		
-
+		//	t.erase(t.be;
 		}
 
 		assert(TestItem::getCount() == 0);

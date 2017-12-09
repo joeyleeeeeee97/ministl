@@ -1,20 +1,20 @@
 #pragma once
 #ifndef _SET_H
 #define _SET_H
-//å…ˆæš‚æ—¶ç”¨äºŒåˆ†æœç´¢æ ‘æ¥å†™ï¼ŒRB-Treeä¸å¤ªå¥½å†™ã€‚ã€‚ã€‚ã€‚
+//ÏÈÔİÊ±ÓÃ¶ş·ÖËÑË÷Ê÷À´Ğ´£¬RB-Tree²»Ì«ºÃĞ´¡£¡£¡£¡£
 #include"Tree.h"
 #include<utility>
 namespace ministl
 {
-	//ç”¨å°äºå·æ¯”è¾ƒ
+	//ÓÃĞ¡ÓÚºÅ±È½Ï
 	template<typename T>
 	class set
 	{
 	public:
 		typedef T key_type;
-		typedef BStree_iterator<T, T> iterator;
+		typedef BStree_iterator<T> iterator;
 	private:
-		BStree<T, T> sequence;
+		BStree<T> sequence;
 	public:
 		set() :sequence() {}
 		iterator begin()
@@ -67,7 +67,7 @@ namespace ministl
 		{
 			iterator f = sequence.find(val);
 			if (f == NULL)
-				return sequence.insert(val,val);
+				return sequence.insert(val);
 			else
 				return f;
 		}

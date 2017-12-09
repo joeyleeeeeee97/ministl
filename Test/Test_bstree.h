@@ -19,15 +19,15 @@ namespace ministl
 			return false;
 		return true;
 	}
-	void test1()//妫�娴嬭凯浠ｅ櫒 閬嶅巻鏂规硶鏄惁姝ｇ‘
+	void test1()//检测迭代器 遍历方法是否正确
 	{
 		std::random_device rd; 
 		std::vector<int> v;
-		ministl::BStree<int, int> t;
+		ministl::BStree<int> t;
 		for (int i = 0; i < 1000; i++)
 		{
 			int tmp = rd() % 65536;
-			t.insert(tmp,tmp);
+			t.insert(tmp);
 			v.push_back(tmp);
 		}
 		sort(v.begin(), v.end());
@@ -41,11 +41,11 @@ namespace ministl
 	{
 		std::random_device rd;
 		std::vector<int> v;
-		ministl::BStree<int, int> t;
+		ministl::BStree<int> t;
 		for (int i = 0; i < 1000; i++)
 		{
 			int tmp = rd() % 65536;
-			t.insert(tmp, tmp);
+			t.insert(tmp);
 			v.push_back(tmp);
 		}
 		sort(v.begin(), v.end());

@@ -2,7 +2,8 @@
 #ifndef _ALGORITHM_H
 #define _ALGORITHM_H
 #include "utility.h"
-
+#include "iterator.h"
+#include "functional.h"
 namespace ministl
 {
 	//	Non - modifying sequence operations :
@@ -202,6 +203,12 @@ namespace ministl
 			}
 		}
 		return result;
+	}
+	template<class InputIterator, class OutputIterator, class Size = size_t>
+	void copy_n(InputIterator first, Size cnt, OutputIterator result)
+	{
+		for (Size i = 0; i < cnt; first++, result++, i++)
+			*result = *first;
 	}
 
 	template<class InputIterator, class OutputIterator>
@@ -411,6 +418,124 @@ namespace ministl
 
 		return first;
 	}
+	//Heap
+	/**********[Make_heap]:O[N]***********/
+	template<class RandomAccessIterator, class Comparator>
+	void up(RandomAccessIterator begin_of_heap, RandomAccessIterator first, RandomAccessIterator last, Comparator comp)
+	{
+		if (first == last) return;
+		size_t index = last - begin_of_heap;
+		size_t parent_index = (index - 1) / 2;
+		for (auto cur = last; parent_index >= 0 && cur != first; parent_index = (index - 1) / 2)
+		{
+			auto parent = begin_of_heap + parent_index;
+			if (comp(*parent, *cur))
+			{
+				ministl::swap(*parent, *cur);
+			}
+			cur = parent;
+			index = cur - begin_of_heap;
+		}
+	}
+
+	template<class RandomAccessIterator, class Comparator>
+	void down(RandomAccessIterator begin_of_heap, RandomAccessIterator first, RandomAccessIterator last, Comparator comp)
+	{
+		if (first == last) return;
+		size_t index = first - begin_of_heap;
+		size_t child_index = index * 2 + 1;
+		for (auto cur = first; child_index <= last - begin_of_heap&&cur < last; child_index = index * 2 + 1)
+		{
+			auto child = begin_of_heap + child_index;
+			if (comp(*cur, *child))
+			{
+				ministl::swap(*cur, *child);
+			}
+			cur = child;
+			index = cur - begin_of_heap;
+		}
+	}
+	template<class RandomAccessIterator>
+	void make_heap(RandomAccessIterator first, RandomAccessIterator last)
+	{
+		ministl::make_heap(first, last, ministl::less<typename iterator_traits<RandomAccessIterator>::value_type>());
+	}
+
+	template<class RandomAccessIterator, class Comparator>
+	void make_heap(RandomAccessIterator first, RandomAccessIterator last, Comparator comp)
+	{
+		const size_t cnt = last - first;
+		for (auto cur = first + cnt / 2; cur >= first; cur--)
+		{
+			ministl::down(first, cur, last, comp);
+		}
+	}
+	/**********[Push_Heap]:O[lgN]***********/
+	template<class RandomAccessIterator>
+	void push_heap(RandomAccessIterator first, RandomAccessIterator last)
+	{
+		ministl::up(first, first, last - 1, ministl::less<typename iterator_traits<RandomAccessIterator>::value_type>());
+	}
+
+	template<class RandomAccessIterator, class Comparator>
+	void push_heap(RandomAccessIterator first, RandomAccessIterator last, Comparator cmp)
+	{
+		ministl::up(first, first, last - 1, cmp);
+	}
+	/**********[Pop_Heap]:O[lgN]***********/
+
+	template<class RandomAccessIterator>
+	void pop_heap(RandomAccessIterator first, RandomAccessIterator last)
+	{
+		ministl::pop_heap(first, first, last - 1, ministl::less<typename iterator_traits<RandomAccessIterator>::value_type>());
+	}
+
+	template<class RandomAccessIterator, class Comparator>
+	void pop_heap(RandomAccessIterator first, RandomAccessIterator last, Comparator cmp)
+	{
+		swap(*first, *(last - 1));
+		if (last - first > 2)
+			ministl::up(first, first, last - 2, cmp);
+	}
+
+	/**********[Sort_Heap]:O[NlgN]***********/
+
+	template<class RandomAccessIterator>
+	void sort_heap(RandomAccessIterator first, RandomAccessIterator last)
+	{
+		ministl::sort_heap(first, last, ministl::less<typename iterator_traits<RandomAccessIterator>::value_type>());
+	}
+
+	template<class RandomAccessIterator, class Comparator>
+	void sort_heap(RandomAccessIterator first, RandomAccessIterator last,Comparator comp)
+	{
+		for (auto cur = last; cur != first; cur--)
+			pop_heap(first, cur, comp);
+	}
+
+	/**********[Is_Heap]:O[N]***********/
+
+	template<class RandomAccessIterator>
+	bool is_heap(RandomAccessIterator first, RandomAccessIterator last)
+	{
+		return ministl::is_heap(first,last, ministl::less<typename iterator_traits<RandomAccessIterator>::value_type>());
+	}
+
+	template<class RandomAccessIterator, class Comparator>
+	bool is_heap(RandomAccessIterator first, RandomAccessIterator last, Comparator comp)
+	{
+		size_t index = (last - first) / 2;
+		for (auto cur = first + index; cur >= first; cur--, index--)
+		{
+			if (*cur < *(first + index * 2 + 1) || (first + index * 2 + 2 < last && *cur < *(first + index * 2 + 2)))
+			{
+				return false;
+			}
+		}
+		return true;
+	}
+
+
 }
 
 

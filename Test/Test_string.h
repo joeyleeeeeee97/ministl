@@ -7,8 +7,9 @@
 namespace ministl{
 
 	template<class C1, class C2>
-	bool Equal_string(C1 l, C2 r)
+	bool Equal_string(const C1& l, const C2& r)
 	{
+		//cout << r.size() << endl;
 		if (l.size() != r.size())
 			return false;
 		auto i = l.begin();

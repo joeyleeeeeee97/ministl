@@ -228,7 +228,7 @@ namespace ministl
 
 		assert(list_Equal(l1, l2));
 		auto l5 = l1;
-	//	ministl::list<int> l6 = l2;//ä¸ºä»€ä¹ˆæ˜¯æµ…æ‹·è´ï¼Ÿï¼
+	//	ministl::list<int> l6 = l2;//ÎªÊ²Ã´ÊÇÇ³¿½±´£¿£¡
 		ministl::list<int> l6;
 		for (auto i : l2)
 			l6.push_back(i);

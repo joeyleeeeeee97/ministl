@@ -232,5 +232,7 @@ namespace ministl
 		typedef _true_type		is_POD_type;
 
 	};
+
+	
 }
 #endif

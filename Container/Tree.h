@@ -1,25 +1,27 @@
-#pragma once
+﻿#pragma once
 #ifndef _TREE_H
 #define _TREE_H
+#include "functional.h"
 #include"allocator.h"
+#include "utility.h"
+#include "iterator.h"
 namespace ministl
 {
 	//Binary search Tree
-	template<typename K, typename T>
+	template<typename T>
 	struct BSnode
 	{
 		BSnode():left(NULL),parent(NULL),right(NULL){}
-		K key;
 		T data;
 		struct BSnode* parent;
 		struct BSnode* left;
 		struct BSnode* right;
 	};
-	template<typename K,typename T>
-	class BStree_base_iterator
+	template<typename T>
+	class BStree_base_iterator : public bidirectional_iterator<T>
 	{
 	public:
-		typedef BSnode<K, T>* ptr;
+		typedef BSnode<T>* ptr;
 		ptr node;
 		BStree_base_iterator()
 		{
@@ -49,7 +51,6 @@ namespace ministl
 				node = node->right;
 				while (node->left)
 					node = node->left;
-			//	return node;
 			}
 		}
 		void decrement()
@@ -76,13 +77,13 @@ namespace ministl
 			}
 		}
 	};
-	template<typename K,typename T>
+	template<typename T>
 	class BStree_iterator 
 	{
 	public:
-		typedef BSnode<K, T>* ptr;
-		typedef  BStree_iterator<K, T> self;
-		BStree_base_iterator<K,T> p;
+		typedef BSnode<T>* ptr;
+		typedef  BStree_iterator<T> self;
+		BStree_base_iterator<T> p;
 		BStree_iterator()
 		{
 			p.node = NULL;
@@ -101,15 +102,15 @@ namespace ministl
 			p.decrement();
 			return *this;
 		}
-		bool operator!=(const  BStree_iterator<K, T>& rhs)
+		bool operator!=(const  BStree_iterator<T>& rhs)
 		{
 			return !(*this == rhs);
 		}
-		bool operator==(const  BStree_iterator<K, T>& rhs)
+		bool operator==(const  BStree_iterator<T>& rhs)
 		{
 			return this->p.node == rhs.p.node;
 		}
-		T operator*()
+		T& operator*()
 		{
 			return p.node->data;
 		}
@@ -118,57 +119,57 @@ namespace ministl
 			return &(*this);
 		}
 	};
-	template<typename K, typename T>
+	template<typename T >
 	class BStree
 	{
 	public:
-		typedef K key_value;
 		typedef T value_type;
 		typedef T* pointer;
 		typedef size_t size_type;
-		typedef BSnode<K,T>* node_ptr;
-		typedef BStree<K, T> self;
-		typedef BStree_iterator<K,T> iterator;
-		//static iterator end(NULL);
-
+		typedef BSnode<T>* node_ptr;
+		typedef BStree<T> self;
+		typedef BStree_iterator<T> iterator;
 	private:
+	//	Compare comparator;
 		node_ptr node;
-		std::allocator<BSnode<K,T>> data_allocator;
-		node_ptr new_node(const key_value& key, const value_type& val,node_ptr pre)
+		size_t data_cnt;
+		std::allocator<BSnode<T>> data_allocator;
+		node_ptr new_node(const value_type& val,node_ptr pre)
 		{
 			node_ptr p = data_allocator.allocate(1);
-			new(&p->key) key_value(key);
 			new(&p->data) value_type(val);
 			p->left = NULL;
 			p->right = NULL;
 			p->parent = pre;
 			return p;
 		}
-		node_ptr insert_aux(node_ptr p, node_ptr pre, const key_value& key, const value_type& val)
+		node_ptr insert_aux(node_ptr p, node_ptr pre,const value_type& val, node_ptr& ret)
 		{
 			if (!p)
 			{
-				return new_node(key, val, pre);
+				return ret = new_node(val, pre);
 			}
-			if (p->key > key)
-				p->left = insert_aux(p->left, p, key, val);
-			else if (p->key < key)
-				p->right = insert_aux(p->right, p, key, val);
+			if (p->data > val)
+				p->left = insert_aux(p->left, p, val, ret);
+			else if (p->data < val)
+				p->right = insert_aux(p->right, p, val, ret);
+			else
+				ret = p;
 			return p;
 		}
-		iterator find_aux(node_ptr p, const key_value& key)
+		iterator find_aux(node_ptr p, const value_type& val)
 		{
 			if (!p)
 			{
 				//std::cerr << "cant find it!\n";
 				return NULL;
 			}
-			if (p->key == key)
+			if (p->data == val)
 				return iterator(p);
-			else if (p->key > key)
-				return find_aux(p->left, key);
+			else if (p->data > val)
+				return find_aux(p->left, val);
 			else
-				return find_aux(p->right, key);
+				return find_aux(p->right, val);
 		}
 		void del(node_ptr link)
 		{
@@ -187,9 +188,9 @@ namespace ministl
 				{
 					node = NULL;
 				}
-				else if (p->parent->left!=NULL && p->parent->left->key == p->key)
+				else if (p->parent->left!=NULL && p->parent->left->data == p->data)
 					p->parent->left = NULL;
-				else if (p->parent->right!=NULL && p->parent->right->key == p->key)
+				else if (p->parent->right!=NULL && p->parent->right->data == p->data)
 					p->parent->right = NULL;
 				delete(p);
 			}
@@ -199,9 +200,9 @@ namespace ministl
 				{
 					node = p->right,node->parent = NULL;
 				}
-				else if (p->parent->left!=NULL && p->parent->left->key == p->key)
+				else if (p->parent->left!=NULL && p->parent->left->data == p->data)
 					p->parent->left = p->right, p->right->parent = p->parent;
-				else if (p->parent->right!=NULL && p->parent->right->key == p->key)
+				else if (p->parent->right!=NULL && p->parent->right->data == p->data)
 					p->parent->right = p->right, p->right->parent = p->parent;
 				delete(p);
 			}
@@ -211,9 +212,9 @@ namespace ministl
 				{
 					node = p->left, node->parent = NULL;
 				}
-				else if (p->parent->left!=NULL && p->parent->left->key == p->key)
+				else if (p->parent->left!=NULL && p->parent->left->data == p->data)
 					p->parent->left = p->left, p->left->parent = p->parent;
-				else if (p->parent->right!=NULL && p->parent->right->key == p->key)
+				else if (p->parent->right!=NULL && p->parent->right->data == p->data)
 					p->parent->right = p->left, p->left->parent = p->parent;
 				delete(p);
 			}
@@ -225,7 +226,7 @@ namespace ministl
 				{
 					tmp = it, it = it->right;
 				}
-				p->key = it->key, p->data = it->data;
+				p->data = it->data;
 				if (tmp != p)
 				{
 					tmp->right = it->left;
@@ -239,7 +240,7 @@ namespace ministl
 				delete(it);
 			}
 		}
-		iterator lower_bound_aux(node_ptr p, const key_value& x)
+		iterator lower_bound_aux(node_ptr p, const value_type& x)
 		{
 			if (!p)
 				return iterator(NULL);
@@ -254,7 +255,7 @@ namespace ministl
 			else
 				return lower_bound_aux(p->right, x);
 		}
-		iterator upper_bound_aux(node_ptr p, const key_value& x)
+		iterator upper_bound_aux(node_ptr p, const value_type& x)
 		{
 			if (!p)
 				return iterator(NULL);
@@ -269,30 +270,26 @@ namespace ministl
 			else
 				return upper_bound_aux(p->right, x);
 		}
-		void erase_val_aux(node_ptr p,const key_value& key)
+		void erase_val_aux(node_ptr p,const value_type& key)
 		{
 			if (p == NULL)
 				return;
-			if (p->key == key)
+			if (p->data == key)
 				erase_aux(p);
-			else if (p->key < key)
+			else if (p->data < key)
 				erase_val_aux(p->right, key);
-			else if (p->key > key)
+			else if (p->data > key)
 				erase_val_aux(p->left, key);
 		}
 	public:
-		BStree() :node(NULL) {}
+		BStree() :node(NULL),data_cnt(0) {}
 		bool empty()
 		{
 			return node == NULL;
 		}
 		size_type size()
 		{
-			if (empty()) return 0;
-			size_t cnt = 0;
-			for (auto it = begin(); it != end(); it++)
-				cnt++;
-			return cnt;
+			return data_cnt;
 		}
 		iterator begin()
 		{
@@ -324,35 +321,39 @@ namespace ministl
 		{
 			return node;
 		}
-		iterator insert(const key_value& key, const value_type& val)
+		pair<iterator,bool> insert(const value_type& val)
 		{
-			node = insert_aux(node, NULL, key, val);
-			//return *this;
-			return iterator(node);
+			node_ptr ret = nullptr;
+			node = insert_aux(node, NULL, val, ret);
+			data_cnt++;
+			return make_pair<iterator, bool>(ret , ret == nullptr);
 		}
-		iterator find(const key_value& key)
+		iterator find(const value_type& key)
 		{
 			return find_aux(node, key);
 		}
-		iterator lower_bound(const key_value& x)
+		iterator lower_bound(const value_type& x)
 		{
 			return lower_bound_aux(node, x);
 		}
-		iterator upper_bound(const key_value& x)
+		iterator upper_bound(const value_type& x)
 		{
 			return upper_bound_aux(node, x);
 		}
 		void erase(iterator pos)
 		{
 			erase_aux(pos.p.node);
+			data_cnt--;
 		}
-		void erase(const key_value& x)
+		void erase(const value_type& x)
 		{
 			erase_val_aux(node, x);
+			data_cnt--;
 		}
 		void clear()
 		{
 			del(node);
+			data_cnt = 0;
 		}
 	};
 	//Trie Tree
@@ -394,5 +395,6 @@ namespace ministl
 		}
 
 	};
+
 }
 #endif

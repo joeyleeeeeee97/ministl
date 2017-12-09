@@ -3,8 +3,10 @@
 #define _LIST_H
 #include"iterator.h"
 #include"construct.h"
+#include"allocator.h"
 namespace ministl
 {
+
 	template <class T>
 	struct list_node
 	{
@@ -13,7 +15,7 @@ namespace ministl
 		T data;
 	};
 	template<class T>
-	struct list_iterator
+	struct list_iterator : public bidirectional_iterator<T>
 	{
 		typedef T value_type;
 		typedef T& reference;
@@ -23,17 +25,16 @@ namespace ministl
 		typedef ptrdiff_t difference_type;
 		typedef list_node<T> node_type;
 		typedef node_type* node_ptr;
-		typedef std::allocator<list_node<T>> Data_allocator;
+		typedef ministl::allocator<list_node<T>> Data_allocator;
 		Data_allocator	data_allocator;
 		node_ptr ptr;
 		//Construct
 		list_iterator()
 		{
-			ptr = data_allocator.allocate(1);
+			ptr = nullptr;
 		}
 		list_iterator(node_type p) :ptr(&p) {}
 		list_iterator(node_ptr p) :ptr(p) {}
-
 		void operator=(const list_iterator p)
 		{
 			ptr = p.ptr;
@@ -42,24 +43,24 @@ namespace ministl
 		{
 			ptr = p;
 		}
-
-		bool operator==(const iterator& x)
+		bool operator==(const iterator& x) const
 		{
 			return ptr == x.ptr;
 		}
-		bool operator!=(const iterator& x)
+		bool operator!=(const iterator& x) const
 		{
 			return !(*this == x);
 		}
 
 		reference operator*() const { return (*ptr).data; }
 		pointer operator->()const { return &(operator*()); }
-
+		//++i
 		iterator& operator++()
 		{
 			ptr = ptr->next;
 			return *this;
 		}
+		//i++
 		iterator operator++(int)
 		{
 			iterator tmp = *this;
@@ -80,7 +81,7 @@ namespace ministl
 			return tmp;
 		}
 	};
-	//ç¯çŠ¶é“¾è¡¨ nodeè¡¨ç¤ºé“¾è¡¨å°¾éƒ¨çš„ä¸€ä¸ªç©ºç™½ç»“ç‚¹, å…¶nextæŒ‡å‘listå¤´ç»“ç‚¹
+	//»·×´Á´±í node±íÊ¾Á´±íÎ²²¿µÄÒ»¸ö¿Õ°×½áµã, ÆänextÖ¸ÏòlistÍ·½áµã
 	template<class T>
 	class list
 	{
@@ -90,13 +91,14 @@ namespace ministl
 		typedef T& reference;
 		typedef T* pointer;
 		typedef size_t size_type;
+		typedef list<T> self;
+		typedef list_iterator<T> iterator;
 	private:
 		typedef  std::allocator<list_node<T>> Data_allocator;
 		Data_allocator data_allocator;
 	protected:
 		typedef list_node<T> list_node;
-		typedef list_iterator<T> iterator;
-		iterator node;//æœ€åä¸€ä¸ªè¿­ä»£å™¨
+		iterator node;//×îºóÒ»¸öµü´úÆ÷
 		node_ptr get_node()
 		{
 			return data_allocator.allocate(1);
@@ -115,8 +117,16 @@ namespace ministl
 			node.ptr = data_allocator.allocate(1);
 			node.ptr->next = node.ptr->pre = node.ptr;
 		}
+		list(const self& rhs) :list(rhs.begin(), rhs.end())
+		{
+	
+		}
+		list(std::initializer_list<T> li):list(li.begin(),li.end())
+		{
+
+		}
 		template<class c>
-		list(c l, c r)
+		list(const c l,const c r)
 		{
 			node.ptr = data_allocator.allocate(1);
 			node.ptr->next = node.ptr->pre = node.ptr;
@@ -132,7 +142,27 @@ namespace ministl
 			while (n--)
 				push_back(val);
 		}
+		//Destructor
+		~list()
+		{
+			if (!empty())
+			{
+				for (iterator it = begin(); it != end(); )
+				{
+					data_allocator.destroy(&it.ptr->data);
+					it++;
+				}
+			}
+		}
 		//Iterators
+		const iterator begin() const
+		{
+			return iterator(node.ptr->next);
+		}
+		const iterator end() const
+		{
+			return iterator(node.ptr);
+		}
 		iterator begin()
 		{
 			return iterator(node.ptr->next);
@@ -261,9 +291,6 @@ namespace ministl
 				{
 					insert(p1, *p2);
 					p2++;
-					/*for (auto it = begin(); it != end(); it++)
-						cout << *it << endl;
-					cout << endl;*/
 				}
 			}
 			while (p2 != other.end())
@@ -318,15 +345,15 @@ namespace ministl
 		}
 		//void transfer(iterator position, iterator first, iterator last)
 		//{
-		//	if (position != last)   // å¦‚æœlast == position, åˆ™ç›¸å½“äºé“¾è¡¨ä¸å˜åŒ–, ä¸è¿›è¡Œæ“ä½œ  
+		//	if (position != last)   // Èç¹ûlast == position, ÔòÏàµ±ÓÚÁ´±í²»±ä»¯, ²»½øĞĞ²Ù×÷  
 		//	{
-		//		(*(link_type((*last.node).prev))).next = position.node;  //ï¼ˆ1ï¼‰
-		//		(*(link_type((*first.node).prev))).next = last.node;  //ï¼ˆ2ï¼‰
-		//		(*(link_type((*position.node).prev))).next = first.node;  //ï¼ˆ3ï¼‰
-		//		link_type tmp = link_type((*position.node).prev);  //ï¼ˆ4ï¼‰
-		//		(*position.node).prev = (*last.node).prev;  //ï¼ˆ5ï¼‰
-		//		(*last.node).prev = (*first.node).prev;  //ï¼ˆ6ï¼‰
-		//		(*first.node).prev = tmp;  //ï¼ˆ7ï¼‰
+		//		(*(link_type((*last.node).prev))).next = position.node;  //£¨1£©
+		//		(*(link_type((*first.node).prev))).next = last.node;  //£¨2£©
+		//		(*(link_type((*position.node).prev))).next = first.node;  //£¨3£©
+		//		link_type tmp = link_type((*position.node).prev);  //£¨4£©
+		//		(*position.node).prev = (*last.node).prev;  //£¨5£©
+		//		(*last.node).prev = (*first.node).prev;  //£¨6£©
+		//		(*first.node).prev = tmp;  //£¨7£©
 		//	}
 		//}
 		void transfer(iterator pos, iterator first, iterator last)
@@ -385,6 +412,12 @@ namespace ministl
 			return *this;
 		}
 	};
+
+	template<class T>
+	void swap(list<T>& a, list<T>& b)
+	{
+		a.swap(b);
+	}
 }
 
 
