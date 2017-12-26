@@ -3,8 +3,8 @@
 #define _VECTOR_H
 #include"memory.h"
 #include"algorithm.h"
-#include"construct.h"
-#include"allocator.h"
+#include"Memory/construct.h"
+#include"Memory/allocator.h"
 #include"iterator.h"
 namespace ministl
 {

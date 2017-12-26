@@ -2,8 +2,8 @@
 #ifndef _LIST_H
 #define _LIST_H
 #include"iterator.h"
-#include"construct.h"
-#include"allocator.h"
+#include"Memory/construct.h"
+#include"Memory/allocator.h"
 namespace ministl
 {
 
@@ -377,7 +377,9 @@ namespace ministl
 		void splice(iterator pos, list<T>& rhs, iterator first, iterator last)
 		{
 			if (*this != rhs)
+			{
 				transfer(pos, first, last);
+			}
 		}
 		void splice(iterator pos, list<T>& rhs, iterator it)
 		{
@@ -385,6 +387,52 @@ namespace ministl
 			insert(pos, tmp);
 			rhs.erase(it);
 		}
+		void debug()
+		{
+			for (auto it = begin(); it != end(); it++)
+			{
+				std::cout << *it << ' ';
+			}
+			std::cout << std::endl;
+		}
+		/*归并排序非递归形式 O(NlogN)*/
+		void sort()
+		{
+			if (size() <= 1)
+			{
+				return;
+			}
+			self carry;
+			self counter[64];
+			int fill = 0;
+			while (!empty())
+			{
+				carry.splice(carry.begin(), *this, begin());
+				carry.debug();
+				int i = 0;
+				while (i < fill && !counter[i].empty())
+				{
+					std::cout << i << " ";
+					counter[i].debug();
+					counter[i].merge(carry);
+					std::cout << i << " ";
+					counter[i].debug();
+					carry.swap(counter[i++]);
+				}
+				carry.swap(counter[i]);
+				if (i == fill)
+				{
+					++fill;
+				}
+			}
+			for (int i = 1; i < fill; i++)
+			{
+				counter[i].merge(counter[i - 1]);
+			}
+			swap(counter[fill - 1]);
+		}
+
+
 		bool operator == (list<T>& rhs)
 		{
 			if (size() != rhs.size())

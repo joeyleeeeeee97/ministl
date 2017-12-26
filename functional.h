@@ -73,6 +73,24 @@ namespace ministl
 			return lhs < rhs;
 		}
 	};
+	
+	template <class T>
+	struct greater : binary_function<T, T, bool>
+	{
+		bool operator()(const T& lhs, const T& rhs) const
+		{
+			return lhs > rhs;
+		}
+	};
+
+	template <class T> 
+	struct equal_to : binary_function <T, T, bool>
+	{
+		bool operator() (const T& x, const T& y) const
+		{
+			return x == y;
+		}
+	};
 
 	template<class T>
 	struct greater_equal : binary_function<T, T, bool>
