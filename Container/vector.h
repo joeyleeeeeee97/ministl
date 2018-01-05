@@ -182,7 +182,7 @@ namespace ministl
 		{
 			if (empty())
 			{
-				std::cerr << "�յ�!" << std::endl;
+				std::cerr << "pop on empty" << std::endl;
 				std::exit(1);
 			}
 			End--;

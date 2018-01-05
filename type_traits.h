@@ -7,6 +7,18 @@ namespace ministl
 	struct _true_type {};
 	struct _false_type {};
 
+	template<typename T, typename U>
+	struct is_same
+	{
+		typedef _false_type value;
+	};
+	template<typename T>
+	struct is_same<T, T>
+	{
+		typedef _true_type value;
+	};
+
+
 	template<class T>
 	struct _type_traits {
 		typedef _false_type		has_trivial_constructor;

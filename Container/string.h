@@ -1,7 +1,7 @@
 #pragma once
 #ifndef _STRING_H
 #define _STRING_H
-#include"allocator.h"
+#include"Memory/allocator.h"
 #include"xhash.h"
 #include<algorithm>
 #include <ostream>

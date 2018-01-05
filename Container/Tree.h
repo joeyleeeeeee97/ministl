@@ -2,16 +2,17 @@
 #ifndef _TREE_H
 #define _TREE_H
 #include "functional.h"
-#include"allocator.h"
+#include "Memory/allocator.h"
 #include "utility.h"
 #include "iterator.h"
+#include "Container/queue.h"
 namespace ministl
 {
 	//Binary search Tree
 	template<typename T>
 	struct BSnode
 	{
-		BSnode():left(NULL),parent(NULL),right(NULL){}
+		BSnode():left(nullptr),parent(nullptr),right(nullptr){}
 		T data;
 		struct BSnode* parent;
 		struct BSnode* left;
@@ -25,7 +26,7 @@ namespace ministl
 		ptr node;
 		BStree_base_iterator()
 		{
-			node = NULL;
+			node = nullptr;
 		}
 		BStree_base_iterator(ptr p)
 		{
@@ -33,16 +34,16 @@ namespace ministl
 		}
 		void increment()
 		{
-			if (node->right == NULL)
+			if (node->right == nullptr)
 			{
 				ptr pre = node->parent;
-				while (pre != NULL&&node == pre->right)
+				while (pre != nullptr&&node == pre->right)
 				{
 					node = pre;
 					pre = node->parent;
 				}
-				if (pre == NULL)
-					node = NULL;
+				if (pre == nullptr)
+					node = nullptr;
 				else
 					node = pre;
 			}
@@ -55,16 +56,16 @@ namespace ministl
 		}
 		void decrement()
 		{
-			if (node->left == NULL)
+			if (node->left == nullptr)
 			{
 				ptr pre = node->parent;
-				while (pre != NULL&&node == pre->left)
+				while (pre != nullptr&&node == pre->left)
 				{
 					node = pre;
 					pre = node->parent;
 				}
-				if (pre == NULL)
-					node = NULL;
+				if (pre == nullptr)
+					node = nullptr;
 				else
 					node = pre;
 			}
@@ -86,7 +87,7 @@ namespace ministl
 		BStree_base_iterator<T> p;
 		BStree_iterator()
 		{
-			p.node = NULL;
+			p.node = nullptr;
 		}
 		BStree_iterator(ptr _p)
 		{
@@ -138,14 +139,23 @@ namespace ministl
 		{
 			node_ptr p = data_allocator.allocate(1);
 			new(&p->data) value_type(val);
-			p->left = NULL;
-			p->right = NULL;
+			p->left = nullptr;
+			p->right = nullptr;
 			p->parent = pre;
 			return p;
 		}
 		node_ptr insert_aux(node_ptr p, node_ptr pre,const value_type& val, node_ptr& ret)
 		{
-			if (!p)
+			while (p)
+			{
+				if (p->data == val) return p;
+				pre = p;
+				p = p->data > val ? p->left : p->right;
+			}
+			return new_node(val, pre);
+
+			/* 递归版本
+			if(!p)
 			{
 				return ret = new_node(val, pre);
 			}
@@ -155,66 +165,71 @@ namespace ministl
 				p->right = insert_aux(p->right, p, val, ret);
 			else
 				ret = p;
-			return p;
+			return p;*/
 		}
 		iterator find_aux(node_ptr p, const value_type& val)
 		{
-			if (!p)
+			while (p && p->data != val)
 			{
-				//std::cerr << "cant find it!\n";
-				return NULL;
+				p = p->data > val ? p->left : p->right;
 			}
-			if (p->data == val)
-				return iterator(p);
-			else if (p->data > val)
-				return find_aux(p->left, val);
-			else
-				return find_aux(p->right, val);
+			return iterator(p);
 		}
-		void del(node_ptr link)
+		void del()
 		{
-			if (link->left)
-				del(link->left);
-			if (link->right)
-				del(link->right);
-			delete(link);
-			node = NULL;
+			ministl::queue<node_ptr> q;
+			q.push(node);
+			while (!q.empty())
+			{
+				node_ptr p = q.front();
+				q.pop();
+				if (p->left)
+				{
+					q.push(p->left);
+				}
+				if (p->right)
+				{
+					q.push(p->right);
+				}
+				delete p;
+			}
+			node = nullptr;
 		}
 		void erase_aux(node_ptr p)
 		{
-			if (p->left == NULL&&p->right == NULL)
+			if (p->left == nullptr&&p->right == nullptr)
 			{
-				if (p->parent == NULL)
+				if (p->parent == nullptr)
 				{
-					node = NULL;
+					node = nullptr;
 				}
-				else if (p->parent->left!=NULL && p->parent->left->data == p->data)
-					p->parent->left = NULL;
-				else if (p->parent->right!=NULL && p->parent->right->data == p->data)
-					p->parent->right = NULL;
+				else if (p->parent->left!=nullptr && p->parent->left->data == p->data)
+					p->parent->left = nullptr;
+				else if (p->parent->right!=nullptr && p->parent->right->data == p->data)
+					p->parent->right = nullptr;
 				delete(p);
 			}
-			else if (p->left == NULL&&p->right != NULL)
+			else if (p->left == nullptr&&p->right != nullptr)
 			{
-				if (p->parent == NULL)
+				if (p->parent == nullptr)
 				{
-					node = p->right,node->parent = NULL;
+					node = p->right,node->parent = nullptr;
 				}
-				else if (p->parent->left!=NULL && p->parent->left->data == p->data)
+				else if (p->parent->left!=nullptr && p->parent->left->data == p->data)
 					p->parent->left = p->right, p->right->parent = p->parent;
-				else if (p->parent->right!=NULL && p->parent->right->data == p->data)
+				else if (p->parent->right!=nullptr && p->parent->right->data == p->data)
 					p->parent->right = p->right, p->right->parent = p->parent;
 				delete(p);
 			}
-			else if (p->left != NULL&&p->right == NULL)
+			else if (p->left != nullptr&&p->right == nullptr)
 			{
-				if (p->parent == NULL)
+				if (p->parent == nullptr)
 				{
-					node = p->left, node->parent = NULL;
+					node = p->left, node->parent = nullptr;
 				}
-				else if (p->parent->left!=NULL && p->parent->left->data == p->data)
+				else if (p->parent->left!=nullptr && p->parent->left->data == p->data)
 					p->parent->left = p->left, p->left->parent = p->parent;
-				else if (p->parent->right!=NULL && p->parent->right->data == p->data)
+				else if (p->parent->right!=nullptr && p->parent->right->data == p->data)
 					p->parent->right = p->left, p->left->parent = p->parent;
 				delete(p);
 			}
@@ -222,7 +237,7 @@ namespace ministl
 			{
 				node_ptr it = p->left;
 				node_ptr tmp = p;
-				while (it->right != NULL)
+				while (it->right != nullptr)
 				{
 					tmp = it, it = it->right;
 				}
@@ -235,7 +250,7 @@ namespace ministl
 				{
 					tmp->left = it->left;
 				}
-				if (it->left != NULL)
+				if (it->left != nullptr)
 					it->left->parent = tmp;
 				delete(it);
 			}
@@ -243,11 +258,11 @@ namespace ministl
 		iterator lower_bound_aux(node_ptr p, const value_type& x)
 		{
 			if (!p)
-				return iterator(NULL);
+				return iterator(nullptr);
 			if (p->data >= x)
 			{
 				auto tmp = lower_bound_aux(p->left, x);
-				if (tmp.p.node != NULL)
+				if (tmp.p.node != nullptr)
 					return tmp;
 				else
 					return iterator(p);
@@ -258,11 +273,11 @@ namespace ministl
 		iterator upper_bound_aux(node_ptr p, const value_type& x)
 		{
 			if (!p)
-				return iterator(NULL);
+				return iterator(nullptr);
 			if (p->data > x)
 			{
 				auto tmp = upper_bound_aux(p->left, x);
-				if (tmp.p.node != NULL)
+				if (tmp.p.node != nullptr)
 					return tmp;
 				else
 					return iterator(p);
@@ -272,7 +287,7 @@ namespace ministl
 		}
 		void erase_val_aux(node_ptr p,const value_type& key)
 		{
-			if (p == NULL)
+			if (p == nullptr)
 				return;
 			if (p->data == key)
 				erase_aux(p);
@@ -282,10 +297,10 @@ namespace ministl
 				erase_val_aux(p->left, key);
 		}
 	public:
-		BStree() :node(NULL),data_cnt(0) {}
+		BStree() :node(nullptr),data_cnt(0) {}
 		bool empty()
 		{
-			return node == NULL;
+			return node == nullptr;
 		}
 		size_type size()
 		{
@@ -293,27 +308,27 @@ namespace ministl
 		}
 		iterator begin()
 		{
-			if (node == NULL)
+			if (node == nullptr)
 			{
-				iterator t(NULL);
+				iterator t(nullptr);
 				return t;
 			}
 			iterator it(node);
-			while (it.p.node->left != NULL)
+			while (it.p.node->left != nullptr)
 				it.p.node = it.p.node->left;
 			return it;
 		}
 		iterator end()
 		{
-			iterator it(NULL);		
+			iterator it(nullptr);		
 			return  (it);
 		}
 		iterator find_max()
 		{
 			node_ptr p = node;
-			if (p == NULL)
-				return iterator(NULL);
-			while (p->right != NULL)
+			if (p == nullptr)
+				return iterator(nullptr);
+			while (p->right != nullptr)
 				p = p->right;
 			return iterator(p);
 		}
@@ -324,7 +339,7 @@ namespace ministl
 		pair<iterator,bool> insert(const value_type& val)
 		{
 			node_ptr ret = nullptr;
-			node = insert_aux(node, NULL, val, ret);
+			node = insert_aux(node, nullptr, val, ret);
 			data_cnt++;
 			return make_pair<iterator, bool>(ret , ret == nullptr);
 		}
@@ -352,7 +367,7 @@ namespace ministl
 		}
 		void clear()
 		{
-			del(node);
+			del();
 			data_cnt = 0;
 		}
 	};
@@ -371,7 +386,7 @@ namespace ministl
 			node_ptr p = Data_allocator.allocate(1);
 			p->cnt = 0;
 			for (int i = 0; i < 26; i++)
-				p->next[i] = NULL;
+				p->next[i] = nullptr;
 		}
 		std::allocator<Trienode> Data_allocator;
 		node_ptr node;

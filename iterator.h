@@ -75,7 +75,7 @@ namespace ministl
 	template<class T>
 	struct iterator_traits<T*>
 	{
-		typedef random_access_iterator_tag Iiteraotr_category;
+		typedef random_access_iterator_tag iterator_category;
 		typedef T value_type;
 		typedef ptrdiff_t difference_type;
 		typedef T* pointer;
@@ -86,7 +86,7 @@ namespace ministl
 	template<class T>
 	struct iterator_traits<const T*>
 	{
-		typedef random_access_iterator_tag Iiteraotr_category;
+		typedef random_access_iterator_tag iterator_category;
 		typedef T value_type;
 		typedef ptrdiff_t difference_type;
 		typedef T* pointer;
@@ -158,6 +158,117 @@ namespace ministl
 			a++, cnt++;
 		return cnt;
 	}
+	//Itertor adaptors - inserter
+
+	template<class Container>
+	class back_inserter_iterator
+	{
+	private:
+		typedef back_inserter_iterator<Container> self;
+	public:
+		back_inserter_iterator(Container& rhs) :ptr(&rhs)
+		{
+
+		}
+		self& operator=(const typename Container::value_type& value)
+		{
+			ptr->push_back(value);
+			return *this;
+		}
+
+		self& operator++()
+		{
+			return *this;
+		}
+		self& operator++(int)
+		{
+			return *this;
+		}
+		self& operator*()
+		{
+			return *this;
+		}
+	private:
+		Container* ptr;
+	};
+
+	template<class Container>
+	back_inserter_iterator<Container> back_inserter(const Container& rhs)
+	{
+		return back_inserter_iterator<Container>(rhs);
+	}
+
+	template<class Container>
+	class inserter_iterator
+	{
+	private:
+		typedef inserter_iterator<Container> self;
+		typedef typename Container::iterator itername;
+	public:
+		inserter_iterator(Container& rhs1,itername& rhs2) :ptr(&rhs1),iter(rhs2)
+		{
+
+		}
+		self& operator=(const typename Container::value_type& value)
+		{
+			iter = ptr->insert(iter, value);
+			iter++;
+			return *this;
+		}
+
+		self& operator++()
+		{
+			return *this;
+		}
+		self& operator++(int)
+		{
+			return *this;
+		}
+		self& operator*()
+		{
+			return *this;
+		}
+	private:
+		Container* ptr;
+		itername iter;
+	};
+
+	//- stream iterator
+	/*
+	流迭代器可以把迭代器绑定到一个数据流对象上，在内部维护这个对象，
+	*/
+	template<class T>
+	class ostream_iterator
+	{
+	private:
+		typedef forward_iterator_tag iterator_category;
+		typedef void value_type;
+		typedef void difference_type;
+		typedef void pointer;
+		typedef void reference;
+		typedef ostream_iterator<T> self;
+	public:
+		ostream_iterator(std::ostream& ss, const char* str) :stream(&ss), delim(str)
+		{
+
+		}
+		self& operator=(const T& value)
+		{
+			*stream << value;
+			if (delim != nullptr)
+			{
+				*stream << delim;
+			}
+			return *this;
+		}
+		self& operator++(int) { return *this; }
+		self& operator++() { return *this; }
+		self& operator*() { return *this; }
+	private:
+		std::ostream* stream;
+		const char* delim;
+
+	};
 }
 
-#endif // ! _ITERATOR_H
+#endif 
