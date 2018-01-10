@@ -1,6 +1,8 @@
 #pragma once
 #ifndef _FUNCTIONAL_H
 #define _FUNCTIONAL_H
+#include<functional>
+#include<tuple>
 namespace ministl
 {
 	extern const int MAXN = 10866;
@@ -349,6 +351,60 @@ namespace ministl
 	const_mem_fun1_ref_t<S, T, A> mem_fun_ref(S(T::*f)(A) const)
 	{
 		return const_mem_fun1_ref_t<S, T, A>(f);
+	}
+
+
+	template <std::size_t...>
+	struct tuple_indices {};
+
+
+	template <std::size_t Sp, class IntTuple, std::size_t Ep>
+	struct make_indices_imp;
+
+	template <std::size_t Sp, std::size_t... Indices, std::size_t Ep>
+	struct make_indices_imp<Sp, tuple_indices<Indices...>, Ep>
+	{
+		typedef typename make_indices_imp<Sp + 1, tuple_indices<Indices..., Sp>, Ep>::type type;
+	};
+
+	template <std::size_t Ep, std::size_t... Indices>
+	struct make_indices_imp<Ep, tuple_indices<Indices...>, Ep>
+	{
+		typedef tuple_indices<Indices...> type;
+	};
+
+	template <std::size_t Ep, std::size_t Sp = 0>
+	struct make_tuple_indices
+	{
+		typedef typename make_indices_imp<Sp, tuple_indices<>, Ep>::type type;
+	};
+
+	template <class F, class... Args>
+	struct binder
+	{
+		binder(F&& f, Args&&... args) :data(std::forward<F>(f), std::forward<Args>(args)...) {}
+		inline auto operator()()
+		{
+			typedef typename make_tuple_indices<std::tuple_size<std::tuple<F, Args...> >::value, 1>::type index_type;
+			return run2(index_type());
+		}
+		template <std::size_t... Indices>
+		void run2(tuple_indices<Indices...>)
+		{
+			invoke(std::move(std::get<0>(data)), std::move(std::get<Indices>(data))...);
+		}
+		inline auto invoke(F&& f, Args&&... args)
+		{
+			return std::forward<F>(f)(std::forward<Args>(args)...);
+		}
+		std::tuple<F,Args...> data;
+	};
+	
+
+	template <class F, class... Args >
+	ministl::binder<F,Args...> bind(F&& f, Args&&... args)
+	{
+		return binder<F, Args...>(std::forward<F>(f), std::forward<Args>(args)...);
 	}
 }
 

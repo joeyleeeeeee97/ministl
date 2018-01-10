@@ -6,6 +6,21 @@
 #include "functional.h"
 namespace ministl
 {
+	template<class BiDirectionalIteartor>
+	inline void reverse(BiDirectionalIteartor first, BiDirectionalIteartor last)
+	{
+		while (true)
+		{
+			if (first == last || first == --last)
+			{
+				break;
+			}
+			else
+			{
+				iter_swap(first++, last);
+			}
+		}
+	}
 	//	Non - modifying sequence operations :
 	template<class ForwardIterator, class Function>
 	Function for_each(ForwardIterator first, ForwardIterator last, Function f)
@@ -698,6 +713,37 @@ namespace ministl
 		}
 	}
 
+	/*
+	Permutation O(N)
+	*/
+	template <class BidirectionalIterator>
+	bool next_permutation(BidirectionalIterator first,
+		BidirectionalIterator last)
+	{
+		if (last - first <= 1)
+		{
+			return false;
+		}
+		auto i = first;
+		for (; i + 1 != last && *i < *(i + 1); i++)
+		{}
+		if (i == last)
+		{
+			return false;
+		}
+		auto j = i + 1;
+		for (auto tmp = last - 1; tmp != j + 1; tmp++)
+		{
+			if (*tmp > *i && *tmp < *j)
+			{
+				j = tmp;
+			}
+		}
+		iter_swap(j, pos);
+		ministl::reverse(pos + 1, nums.end());
+		return true;
+
+	}
 
 
 }
